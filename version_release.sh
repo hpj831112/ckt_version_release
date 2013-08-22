@@ -25,7 +25,7 @@ HWV_BUILD_VERSION=${HWV_BUILD_VERSION_T#*=}
 
 #defind target build version
 FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$HWV_BUILD_VERSION
-echo -e "Current version is: \033[49;31;5m $FOLDER_NAME \033[0m, would you like to build the version? If is please click Enter to continue, else please input your build version: \c "
+echo -e "Current build version is: \033[49;31;5m $HWV_BUILD_VERSION \033[0m, would you like to build the version? If is please click Enter to continue, else please input new \033[49;31;5m build version(like $HWV_BUILD_VERSION): \033[0m \c "
 
 #make folder name add set build version in project config file
 read BUILD_VERSION
@@ -36,6 +36,8 @@ if [ -n "$VERSION" ] ;then
        sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
     fi
 fi
+
+echo -e "Curren version is: \033[49;31;5m $FOLDER_NAME \033[0m "
 
 #build target version 
 if [ $TARGET_BUILD_VARIANT = 'user' ] ;then
