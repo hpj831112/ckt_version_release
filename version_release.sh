@@ -4,6 +4,47 @@
 PROJECT_NAME=$1
 TARGET_BUILD_VARIANT=$2
 
+#if there has not o option, show menu for user chooose
+function fShowProjectNameMenu(){
+    echo -e "ckt_release Menu...  Please choose a project:\n1.ckt72_we_jb3\n2.ckt72_we_lca\n3.banyan_addon\nInput the order of the project you choosed:\c"
+    read order
+    if [ "$order" = "1" ] ;then
+       PROJECT_NAME="ckt72_we_jb3"
+    elif [ "$order" = "2" ] ;then
+        PROJECT_NAME="ckt72_we_lca"
+    elif [ "$order" = "3" ] ;then
+        PROJECT_NAME="banyan_addon"
+    else
+       echo "Sorry you must input the muber order of the project!"
+       fShowProjectNameMenu;
+    fi
+}
+
+function fShowTargetMenu(){
+    echo -e "ckt_release Menu...  Please choose a build version:\n1.user\n2.eng\n3.p_user\n4.p_eng\nInput the order of the build version you choosed:\c"
+    read target
+    if [ "$target" = "1" ] ;then
+       TARGET_BUILD_VARIANT="user"
+    elif [ "$target" = "2" ] ;then
+       TARGET_BUILD_VARIANT="eng"
+    elif [ "$target" = "3" ] ;then
+       TARGET_BUILD_VARIANT="p_user"
+    elif [ "$target" = "4" ] ;then
+       TARGET_BUILD_VARIANT="p_eng"
+    else
+       echo "Sorry you must input the muber order of the build version!"
+       fShowTargetMenu;
+    fi
+}
+
+if [ -z "$PROJECT_NAME" ] ;then
+   fShowProjectNameMenu;
+fi
+
+if [ -z "$TARGET_BUILD_VARIANT" ] ;then
+   fShowTargetMenu;
+fi
+
 CKT_HOME=`pwd`
 CKT_HOME_OUT_PROJECT=${CKT_HOME}"/out/target/product/$PROJECT_NAME"
 CKT_HOME_MTK_MODEM=${CKT_HOME}"/mediatek/custom/common/modem"
