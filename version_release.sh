@@ -1,86 +1,111 @@
 #!/bin/bash
 
 #defind vars
-PROJECT_NAME=$1
-TARGET_BUILD_VARIANT=$2
+PROJECT_NAME="ckt72_we_jb3"
+TARGET_BUILD_VARIANT="user"
+VERSION=""
+IS_ONLY_MAKE_PACHAGE="n"
+USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-z only_make_zip_file] [-? show_this_message] "
+OPTION_COUNT=$#
 
 #if there has not o option, show menu for user chooose
-function fShowProjectNameMenu(){
-    echo -e "ckt_release Menu...  Please choose a project:\n1.ckt72_we_jb3\n2.ckt72_we_lca\n3.banyan_addon\nInput the order of the project you choosed:\c"
+function fShowMenu(){
+    local option1="ckt72_we_jb3-user"
+    local option2="ckt72_we_jb3-eng"
+    local option3="ckt72_we_lca-user"
+    local option4="ckt72_we_lca-eng"
+    echo -e "\033[49;34;5m ckt_release Menu...  Please choose a option:\033[0m \n\t 1.$option1\n\t 2.$option2\n\t 3.$option3\n\t 4.$option4\nInput the order of the project you choosed:\c"
     read order
     if [ "$order" = "1" ] ;then
-       PROJECT_NAME="ckt72_we_jb3"
+       PROJECT_NAME=${option1%*-*}
+       TARGET_BUILD_VARIANT=${option1#*-}
     elif [ "$order" = "2" ] ;then
-        PROJECT_NAME="ckt72_we_lca"
+       PROJECT_NAME=${option2%*-*}
+       TARGET_BUILD_VARIANT=${option2#*-}
     elif [ "$order" = "3" ] ;then
-        PROJECT_NAME="banyan_addon"
+       PROJECT_NAME=${option3%*-*}
+       TARGET_BUILD_VARIANT=${option3#*-}
+    elif [ "$order" = "4" ] ;then
+       PROJECT_NAME=${option4%*-*}
+       TARGET_BUILD_VARIANT=${option4#*-}
     else
-       echo "Sorry you must input the muber order of the project!"
-       fShowProjectNameMenu;
+       echo "Sorry you must input the muber order of the option!"
+       fShowMenu;
     fi
 }
 
-function fShowTargetMenu(){
-    echo -e "ckt_release Menu...  Please choose a build version:\n1.user\n2.eng\n3.p_user\n4.p_eng\nInput the order of the build version you choosed:\c"
-    read target
-    if [ "$target" = "1" ] ;then
-       TARGET_BUILD_VARIANT="user"
-    elif [ "$target" = "2" ] ;then
-       TARGET_BUILD_VARIANT="eng"
-    elif [ "$target" = "3" ] ;then
-       TARGET_BUILD_VARIANT="p_user"
-    elif [ "$target" = "4" ] ;then
-       TARGET_BUILD_VARIANT="p_eng"
-    else
-       echo "Sorry you must input the muber order of the build version!"
-       fShowTargetMenu;
-    fi
-}
 
-if [ -z "$PROJECT_NAME" ] ;then
-   fShowProjectNameMenu;
+if [ $OPTION_COUNT -eq 0 ] ;then
+   fShowMenu;
 fi
 
-if [ -z "$TARGET_BUILD_VARIANT" ] ;then
-   fShowTargetMenu;
+#read user input
+while getopts ":p:t:v:z:" opt; do
+    case $opt in
+        p ) PROJECT_NAME=$OPTARG 
+            ;;
+        t ) TARGET_BUILD_VARIANT=$OPTARG 
+            ;;
+        v ) VERSION=$OPTARG 
+            ;;
+        z ) IS_ONLY_MAKE_PACHAGE=$OPTARG 
+            ;;
+       \? ) echo $USAGE 
+            exit 1 
+            ;;
+    esac
+done
+
+if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ] ;then
+   TARGET_BUILD_VARIANT="p_"${TARGET_BUILD_VARIANT}
 fi
+
+echo $VERSION
 
 CKT_HOME=`pwd`
 CKT_HOME_OUT_PROJECT=${CKT_HOME}"/out/target/product/$PROJECT_NAME"
 CKT_HOME_MTK_MODEM=${CKT_HOME}"/mediatek/custom/common/modem"
-
-#read version control
 PROJECT_CONFIG_FILE="$CKT_HOME/mediatek/config/$PROJECT_NAME/ProjectConfig.mk"
-HWV_PROJECT_NAME_T=`sed -n '/^HWV_PROJECT_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-HWV_VERSION_NAME_T=`sed -n '/^HWV_VERSION_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-HWV_RELEASE_NAME_T=`sed -n '/^HWV_RELEASE_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-HWV_CUSTOM_VERSION_T=`sed -n '/^HWV_CUSTOM_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+
 HWV_BUILD_VERSION_T=`sed -n '/^HWV_BUILD_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-
-#get version param
-HWV_PROJECT_NAME=${HWV_PROJECT_NAME_T#*=}
-HWV_VERSION_NAME=${HWV_VERSION_NAME_T#*=}
-HWV_RELEASE_NAME=${HWV_RELEASE_NAME_T#*=}
-HWV_CUSTOM_VERSION=${HWV_CUSTOM_VERSION_T#*=}
 HWV_BUILD_VERSION=${HWV_BUILD_VERSION_T#*=}
+if [ -z "$VERSION" ] ;then
 
-#defind target build version
-FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$HWV_BUILD_VERSION
-echo -e "Current version is: \033[49;31;5m $FOLDER_NAME \033[0m, would you like to build the version? If is please click Enter to continue, else please input your build version: \c "
+	#read version control
+	HWV_PROJECT_NAME_T=`sed -n '/^HWV_PROJECT_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+	HWV_VERSION_NAME_T=`sed -n '/^HWV_VERSION_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+	HWV_RELEASE_NAME_T=`sed -n '/^HWV_RELEASE_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+	HWV_CUSTOM_VERSION_T=`sed -n '/^HWV_CUSTOM_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
 
-#make folder name add set build version in project config file
-read BUILD_VERSION
-VERSION=$BUILD_VERSION
-if [ -n "$VERSION" ] ;then
-    if [ $VERSION != $HWV_BUILD_VERSION ] ;then
-       FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$VERSION
-       sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
-    fi
+	#get version param
+	HWV_PROJECT_NAME=${HWV_PROJECT_NAME_T#*=}
+	HWV_VERSION_NAME=${HWV_VERSION_NAME_T#*=}
+	HWV_RELEASE_NAME=${HWV_RELEASE_NAME_T#*=}
+	HWV_CUSTOM_VERSION=${HWV_CUSTOM_VERSION_T#*=}
+
+	#defind target build version
+	FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$HWV_BUILD_VERSION
+	echo -e "Current build version is: \033[49;31;5m $HWV_BUILD_VERSION \033[0m, would you like to build the version? If is please click Enter to continue, else please input your build version: \c "
+
+	#make folder name add set build version in project config file
+	read BUILD_VERSION
+	VERSION=$BUILD_VERSION
+	if [ -n "$VERSION" ] ;then
+	    if [ $VERSION != $HWV_BUILD_VERSION ] ;then
+	       FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$VERSION
+	       sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
+	    fi
+	fi
+else
+   if [ $VERSION != $HWV_BUILD_VERSION ] ;then
+      FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$VERSION
+      sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
+   fi
 fi
 
 #build target version 
 if [ $TARGET_BUILD_VARIANT = 'user' ] ;then
-   echo "Begin to release user version, please wait a moment!"
+   echo "Current version is \033[49;31;5m $FOLDER_NAME \033[0m, Begin to release user version, please wait a moment!"
    ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME new
    ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME otapackage
    sh ${CKT_HOME}/ckt/ckt_release.sh
