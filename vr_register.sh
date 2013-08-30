@@ -11,6 +11,12 @@ sudo ln -sf $CURRENT_PATH/version_release.sh /sbin/ckt_release<< EOF
  $PASSWORD
 EOF
 
+#change owner
 sudo chown -Rf ckt /sbin/ckt_release<< EOF
+ $PASSWORD
+EOF
+
+#change permission
+sudo chmod -f 777 ckt /sbin/ckt_release<< EOF
  $PASSWORD
 EOF

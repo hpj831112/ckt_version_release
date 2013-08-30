@@ -5,10 +5,10 @@ PROJECT_NAME="ckt72_we_jb3"
 TARGET_BUILD_VARIANT="user"
 VERSION=""
 IS_ONLY_MAKE_PACHAGE="n"
-USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-z only_make_zip_file] [-? show_this_message] "
+USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-z n or y] [-? show_this_message] "
 OPTION_COUNT=$#
 
-#if there has not o option, show menu for user chooose
+#if there has not a option, show menu for user chooose
 function fShowMenu(){
     local option1="ckt72_we_jb3-user"
     local option2="ckt72_we_jb3-eng"
@@ -60,8 +60,6 @@ if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ] ;then
    TARGET_BUILD_VARIANT="p_"${TARGET_BUILD_VARIANT}
 fi
 
-echo $VERSION
-
 CKT_HOME=`pwd`
 CKT_HOME_OUT_PROJECT=${CKT_HOME}"/out/target/product/$PROJECT_NAME"
 CKT_HOME_MTK_MODEM=${CKT_HOME}"/mediatek/custom/common/modem"
@@ -70,7 +68,6 @@ PROJECT_CONFIG_FILE="$CKT_HOME/mediatek/config/$PROJECT_NAME/ProjectConfig.mk"
 HWV_BUILD_VERSION_T=`sed -n '/^HWV_BUILD_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
 HWV_BUILD_VERSION=${HWV_BUILD_VERSION_T#*=}
 if [ -z "$VERSION" ] ;then
-
 	#read version control
 	HWV_PROJECT_NAME_T=`sed -n '/^HWV_PROJECT_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
 	HWV_VERSION_NAME_T=`sed -n '/^HWV_VERSION_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
@@ -89,7 +86,12 @@ if [ -z "$VERSION" ] ;then
 
 	#make folder name add set build version in project config file
 	read BUILD_VERSION
-	VERSION=$BUILD_VERSION
+        VERSION=$BUILD_VERSION
+
+        if [ -z "$BUILD_VERSION" ] ;then
+	    VERSION=$HWV_BUILD_VERSION
+	fi
+
 	if [ -n "$VERSION" ] ;then
 	    if [ $VERSION != $HWV_BUILD_VERSION ] ;then
 	       FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$VERSION
@@ -101,6 +103,13 @@ else
       FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$VERSION
       sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
    fi
+fi
+
+echo -e "Please confirm the build information:\n\t \033[49;31;5m Project Name:"${PROJECT_NAME}"\n\t  Target Build Version:" ${TARGET_BUILD_VARIANT}"\n\t  Build Version:"${VERSION}"\n\t  Final Package Folder Name:"${FOLDER_NAME}" \033[0m , \n\tit's correctly(y/n): \c "
+
+read confirm
+if [ $confirm = 'n' ] ;then
+  exit
 fi
 
 #build target version 
@@ -152,17 +161,17 @@ cd ../../$OTA_FOLDER
 cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip ./
 
 #copy modem
-echo "copy modem ota to folder..."
+echo "copy modem to folder..."
 cd ../$UPDATE_FOLDER/usb_ota/${UPDATE_FOLDER}".bin"/DATABASE/
 MODEM_DIR_T=`sed -n '/^CUSTOM_MODEM/p' "$PROJECT_CONFIG_FILE"`
 CUSTOM_MODEM=${MODEM_DIR_T#*=}
 
-MODEM_NAME_T1=`sed -n '/^DATABASE_SOURCE/p' "$CKT_HOME/ckt/ckt_release.sh"`
-MODEM_NAME_T2=${MODEM_NAME_T1/\"/}
-MODEM_NAME=${MODEM_NAME_T2/\\/}
-eval $MODEM_NAME
+#MODEM_NAME_T1=`sed -n '/^DATABASE_SOURCE/p' "$CKT_HOME/ckt/ckt_release.sh"`
+#MODEM_NAME_T2=${MODEM_NAME_T1/\"/}
+#MODEM_NAME=${MODEM_NAME_T2/\\/}
+#eval $MODEM_NAME
 
-cp -f $DATABASE_SOURCE ./
+cp -f $CKT_HOME_MTK_MODEM/$CUSTOM_MODEM/BPLGUInfoCustomAppSrcP_* ./
 
 #make zip package
 echo "make zip package..."
