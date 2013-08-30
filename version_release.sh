@@ -65,23 +65,22 @@ CKT_HOME_OUT_PROJECT=${CKT_HOME}"/out/target/product/$PROJECT_NAME"
 CKT_HOME_MTK_MODEM=${CKT_HOME}"/mediatek/custom/common/modem"
 PROJECT_CONFIG_FILE="$CKT_HOME/mediatek/config/$PROJECT_NAME/ProjectConfig.mk"
 
+#read version control
+HWV_PROJECT_NAME_T=`sed -n '/^HWV_PROJECT_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+HWV_VERSION_NAME_T=`sed -n '/^HWV_VERSION_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+HWV_RELEASE_NAME_T=`sed -n '/^HWV_RELEASE_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+HWV_CUSTOM_VERSION_T=`sed -n '/^HWV_CUSTOM_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
 HWV_BUILD_VERSION_T=`sed -n '/^HWV_BUILD_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+
+#get version param
+HWV_PROJECT_NAME=${HWV_PROJECT_NAME_T#*=}
+HWV_VERSION_NAME=${HWV_VERSION_NAME_T#*=}
+HWV_RELEASE_NAME=${HWV_RELEASE_NAME_T#*=}
+HWV_CUSTOM_VERSION=${HWV_CUSTOM_VERSION_T#*=}
 HWV_BUILD_VERSION=${HWV_BUILD_VERSION_T#*=}
+
 if [ -z "$VERSION" ] ;then
-	#read version control
-	HWV_PROJECT_NAME_T=`sed -n '/^HWV_PROJECT_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-	HWV_VERSION_NAME_T=`sed -n '/^HWV_VERSION_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-	HWV_RELEASE_NAME_T=`sed -n '/^HWV_RELEASE_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-	HWV_CUSTOM_VERSION_T=`sed -n '/^HWV_CUSTOM_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-
-	#get version param
-	HWV_PROJECT_NAME=${HWV_PROJECT_NAME_T#*=}
-	HWV_VERSION_NAME=${HWV_VERSION_NAME_T#*=}
-	HWV_RELEASE_NAME=${HWV_RELEASE_NAME_T#*=}
-	HWV_CUSTOM_VERSION=${HWV_CUSTOM_VERSION_T#*=}
-
 	#defind target build version
-	FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$HWV_BUILD_VERSION
 	echo -e "Current build version is: \033[49;31;5m $HWV_BUILD_VERSION \033[0m, would you like to build the version? If is please click Enter to continue, else please input your build version: \c "
 
 	#make folder name add set build version in project config file
@@ -93,17 +92,17 @@ if [ -z "$VERSION" ] ;then
 	fi
 
 	if [ -n "$VERSION" ] ;then
-	    if [ $VERSION != $HWV_BUILD_VERSION ] ;then
-	       FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$VERSION
+	    if [ $VERSION != $HWV_BUILD_VERSION ] ;then   
 	       sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
 	    fi
 	fi
 else
    if [ $VERSION != $HWV_BUILD_VERSION ] ;then
-      FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$VERSION
       sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
    fi
 fi
+
+FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$VERSION
 
 echo -e "Please confirm the build information:\n\t \033[49;31;5m Project Name:"${PROJECT_NAME}"\n\t  Target Build Version:" ${TARGET_BUILD_VARIANT}"\n\t  Build Version:"${VERSION}"\n\t  Final Package Folder Name:"${FOLDER_NAME}" \033[0m , \n\tit's correctly(y/n): \c "
 
