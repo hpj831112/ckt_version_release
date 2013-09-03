@@ -107,17 +107,17 @@ FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSI
 echo -e "Please confirm the build information:\n\t \033[49;31;5m Project Name:"${PROJECT_NAME}"\n\t  Target Build Version:" ${TARGET_BUILD_VARIANT}"\n\t  Build Version:"${VERSION}"\n\t  Final Package Folder Name:"${FOLDER_NAME}" \033[0m , \n\tit's correctly(y/n): \c "
 
 read confirm
-if [ $confirm = 'n' ] ;then
+if [ "$confirm" = 'n' ] ;then
   exit
 fi
 
 #build target version 
-if [ $TARGET_BUILD_VARIANT = 'user' ] ;then
-   echo "Current version is \033[49;31;5m $FOLDER_NAME \033[0m, Begin to release user version, please wait a moment!"
+if [ "$TARGET_BUILD_VARIANT" = 'user' ] ;then
+   echo -e "Current version is \033[49;31;5m $FOLDER_NAME \033[0m, Begin to release user version, please wait a moment!"
    ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME new
    ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME otapackage
    sh ${CKT_HOME}/ckt/ckt_release.sh
-elif [ $TARGET_BUILD_VARIANT = 'eng' ] ;then
+elif [ "$TARGET_BUILD_VARIANT" = 'eng' ] ;then
    echo "Begin to release engineering version, please wait a moment!"
    ${CKT_HOME}/mk $PROJECT_NAME new
    ${CKT_HOME}/mk $PROJECT_NAME otapackage
@@ -159,6 +159,9 @@ echo "copy midlle ota to folder..."
 cd ../../$OTA_FOLDER
 cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip ./
 
+#prepare to make ota different split package
+cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip $HOME/project_build/ckt_version_release/${VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
+
 #copy modem
 echo "copy modem to folder..."
 cd ../$UPDATE_FOLDER/usb_ota/${UPDATE_FOLDER}".bin"/DATABASE/
@@ -178,6 +181,11 @@ cd $CKT_HOME
 zip -qrm ${FOLDER_NAME}".zip" $FOLDER_NAME
 
 mv ${FOLDER_NAME}".zip" ../
-cd ../
+cd $HOME/project_build/ckt_version_release/
+DIFFERENT_INPUT=`ls -t|awk -v a=$(pwd) '{print a"/"$0}'|sed -n '1,2p'|sed 'H;$!d;g;s/\n/  /g'`
+echo $DIFFERENT_INPUT
+
+cd $CKT_HOME
+./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $DIFFERENT_INPUT  $HOME/project_build/ckt_version_release/update.zip
 
 echo -e "\033[49;31;5m The release package is: $FOLDER_NAME.zip \033[0m DOWN"
