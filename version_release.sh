@@ -60,10 +60,16 @@ if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ] ;then
    TARGET_BUILD_VARIANT="p_"${TARGET_BUILD_VARIANT}
 fi
 
+#defind global vars
 CKT_HOME=`pwd`
 CKT_HOME_OUT_PROJECT=${CKT_HOME}"/out/target/product/$PROJECT_NAME"
 CKT_HOME_MTK_MODEM=${CKT_HOME}"/mediatek/custom/common/modem"
 PROJECT_CONFIG_FILE="$CKT_HOME/mediatek/config/$PROJECT_NAME/ProjectConfig.mk"
+VERSION_RELEASE_CONFIG_FILE="$HOME/ckt_version_release/config.conf"
+
+#make ota different split package
+OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR_T=`sed -n '/^OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR=${OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR_T#*=}
 
 #read version control
 HWV_PROJECT_NAME_T=`sed -n '/^HWV_PROJECT_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
@@ -160,7 +166,7 @@ cd ../../$OTA_FOLDER
 cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip ./
 
 #prepare to make ota different split package
-cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip $HOME/project_build/ckt_version_release/${VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
+cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip $OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR/${VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
 
 #copy modem
 echo "copy modem to folder..."
@@ -175,17 +181,14 @@ CUSTOM_MODEM=${MODEM_DIR_T#*=}
 
 cp -f $CKT_HOME_MTK_MODEM/$CUSTOM_MODEM/BPLGUInfoCustomAppSrcP_* ./
 
-#make zip package
-echo "make zip package..."
-cd $CKT_HOME
-zip -qrm ${FOLDER_NAME}".zip" $FOLDER_NAME
-
-mv ${FOLDER_NAME}".zip" ../
-cd $HOME/project_build/ckt_version_release/
+cd $OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR
 DIFFERENT_INPUT=`ls -t|awk -v a=$(pwd) '{print a"/"$0}'|sed -n '1,2p'|sed 'H;$!d;g;s/\n/  /g'`
 echo $DIFFERENT_INPUT
 
 cd $CKT_HOME
 ./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $DIFFERENT_INPUT  $HOME/project_build/ckt_version_release/update.zip
 
-echo -e "\033[49;31;5m The release package is: $FOLDER_NAME.zip \033[0m DOWN"
+cd $OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR
+mv $CKT_HOME/$FOLDER_NAME ./
+echo -e "The release package is: \033[49;31;5m $FOLDER_NAME.zip \033[0m and the ota different split package is \033[49;31;5m update.zip \033[0m DOWN"
+
