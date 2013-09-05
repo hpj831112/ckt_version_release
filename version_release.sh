@@ -239,11 +239,14 @@ DIFFERENT_INPUT=`ls -t|awk -v a=$(pwd) '{print a"/"$0}'|sed -n '1p'|sed 'H;$!d;g
 #make update ota package naem
 UPDATE_OTA_PACKAGE_NAME=""
 SHORT_PROJECT_NAME=""
+PREVIOUS_VERSION=""
 function makeUpdateOtaPackageName(){
 	local T=`echo $VERSION|tr -cd '[0-9\n]'`
 	local N=`expr $T \- 1`
 	local S=`echo $N|awk '{printf "%03s\n" ,$0}'` #add '0' if length less than 3 at left
         local V_T=${VERSION/$T/$S}
+
+        PREVIOUS_VERSION=${FOLDER_NAME_PRE}${V_T}
         local V=`echo $V_T|tr '[:upper:]' '[:lower:]'`
         
 	#make short project name
