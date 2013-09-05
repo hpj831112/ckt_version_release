@@ -24,8 +24,3 @@ EOF
 sudo chmod -f 777 ckt /sbin/ckt_release<< EOF
  $PASSWORD
 EOF
-
-cd $HOME
-rm -rf ckt_version_release
-mkdir ckt_version_release
-cp -f $CURRENT_PATH/config.conf $HOME/ckt_version_release/config.conf

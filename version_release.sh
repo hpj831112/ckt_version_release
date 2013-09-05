@@ -1,11 +1,32 @@
 #!/bin/bash
 
-#defind vars
+echo "*******************************************************************************************"
+echo "*                                                                                         *"
+echo "*                                  CKT VERSION RELEAS                                     *"
+echo "*                                  VERSION beta-v1.0                                      *"
+echo "*                           AUTROR HePeijiang ZhaoDan YaoZhilin                           *"
+echo "*                (c) Copyright ckt version release 2013.  All rights reserved.            *"
+echo "*                                                                                         *"
+echo "*******************************************************************************************"                           
+
+##defind vars
+
+#project name
 PROJECT_NAME="ckt72_we_jb3"
+
+#target buil variant
 TARGET_BUILD_VARIANT="user"
+
+#version
 VERSION=""
+
+#only make package
 IS_ONLY_MAKE_PACHAGE="n"
-USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-z n or y] [-? show_this_message] "
+
+#user introduction
+USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-z n or y] [-x supper_packaged_option] [-? show_this_message] "
+
+#option count
 OPTION_COUNT=$#
 
 #if there has not a option, show menu for user chooose
@@ -39,7 +60,7 @@ if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ] ;then
    fShowMenu;
 fi
 
-#read user input
+#read user input options
 while getopts ":p:t:v:z:x" opt; do
     case $opt in
         p ) PROJECT_NAME=$OPTARG 
@@ -58,93 +79,120 @@ while getopts ":p:t:v:z:x" opt; do
     esac
 done
 
-if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ] ;then
-   TARGET_BUILD_VARIANT="p_"${TARGET_BUILD_VARIANT}
-fi
-
 #defind global vars
 CKT_HOME=`pwd`
 CKT_HOME_OUT_PROJECT=${CKT_HOME}"/out/target/product/$PROJECT_NAME"
 CKT_HOME_MTK_MODEM=${CKT_HOME}"/mediatek/custom/common/modem"
 PROJECT_CONFIG_FILE="$CKT_HOME/mediatek/config/$PROJECT_NAME/ProjectConfig.mk"
-VERSION_RELEASE_CONFIG_FILE="$HOME/ckt_version_release/config.conf"
 
-#make ota different split package
+cd /sbin
+VERSION_RELEASE_HOME_T=`readlink ckt_release`
+VERSION_RELEASE_SHELL_FOLDER=${VERSION_RELEASE_HOME_T%*/*}
+VERSION_RELEASE_CONFIG_FILE="$VERSION_RELEASE_SHELL_FOLDER/config.conf"
+cd -
+
+#make ota different split package saved dir
 OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR_T=`sed -n '/^OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
 OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR=${OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR_T#*=}
 
-#read version control
-HWV_PROJECT_NAME_T=`sed -n '/^HWV_PROJECT_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-HWV_VERSION_NAME_T=`sed -n '/^HWV_VERSION_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-HWV_RELEASE_NAME_T=`sed -n '/^HWV_RELEASE_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-HWV_CUSTOM_VERSION_T=`sed -n '/^HWV_CUSTOM_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-HWV_BUILD_VERSION_T=`sed -n '/^HWV_BUILD_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-
 #get version param
-HWV_PROJECT_NAME=${HWV_PROJECT_NAME_T#*=}
-HWV_VERSION_NAME=${HWV_VERSION_NAME_T#*=}
-HWV_RELEASE_NAME=${HWV_RELEASE_NAME_T#*=}
-HWV_CUSTOM_VERSION=${HWV_CUSTOM_VERSION_T#*=}
-HWV_BUILD_VERSION=${HWV_BUILD_VERSION_T#*=}
+FOLDER_NAME_PRE=""
+HWV_BUILD_VERSION=""
+HWV_PROJECT_NAME=""
 
-if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ];then
-	VERSION=$HWV_BUILD_VERSION
-else
+function getVersionParam(){
+	#read version control
+	local HWV_PROJECT_NAME_T=`sed -n '/^HWV_PROJECT_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+	local HWV_VERSION_NAME_T=`sed -n '/^HWV_VERSION_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+	local HWV_RELEASE_NAME_T=`sed -n '/^HWV_RELEASE_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+	local HWV_CUSTOM_VERSION_T=`sed -n '/^HWV_CUSTOM_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+	local HWV_BUILD_VERSION_T=`sed -n '/^HWV_BUILD_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
 
-	if [ -z "$VERSION" ];then
-		#defind target build version
-		echo -e "Current build version is: \033[49;31;5m $HWV_BUILD_VERSION \033[0m, would you like to build the version? If is please click Enter to continue, else please input your build version: \c "
+	HWV_PROJECT_NAME=${HWV_PROJECT_NAME_T#*=}
+	local HWV_VERSION_NAME=${HWV_VERSION_NAME_T#*=}
+	local HWV_RELEASE_NAME=${HWV_RELEASE_NAME_T#*=}
+	local HWV_CUSTOM_VERSION=${HWV_CUSTOM_VERSION_T#*=}
+	HWV_BUILD_VERSION=${HWV_BUILD_VERSION_T#*=}
 
-		#make folder name add set build version in project config file
-		read BUILD_VERSION
-		VERSION=$BUILD_VERSION
-
-		if [ -z "$BUILD_VERSION" ] ;then
-		    VERSION=$HWV_BUILD_VERSION
-		fi
-
-		if [ -n "$VERSION" ] ;then
-		    if [ $VERSION != $HWV_BUILD_VERSION ] ;then   
-		       sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
-		    fi
-		fi
-	else
-	   if [ $VERSION != $HWV_BUILD_VERSION ] ;then
-	      sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
-	   fi
+	if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ];then
+		VERSION=$HWV_BUILD_VERSION
 	fi
+
+        FOLDER_NAME_PRE=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION
+}
+
+getVersionParam;
+
+if [ -z "$VERSION" ];then
+	#defind target build version
+	echo -e "Current build version is: \033[49;31;5m $HWV_BUILD_VERSION \033[0m, would you like to build the version? If is please click Enter to continue, else please input your build version: \c "
+
+	#make folder name add set build version in project config file
+	read BUILD_VERSION
+	VERSION=$BUILD_VERSION
+
+	if [ -z "$BUILD_VERSION" ] ;then
+	    VERSION=$HWV_BUILD_VERSION
+	fi
+
+	if [ -n "$VERSION" ] ;then
+	    if [ $VERSION != $HWV_BUILD_VERSION ] ;then   
+	       sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
+	    fi
+	fi
+else
+   if [ $VERSION != $HWV_BUILD_VERSION ] ;then
+      sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
+   fi
 fi
 
-echo -e "Please confirm the build information:\n\t \033[49;31;5m Project Name:"${PROJECT_NAME}"\n\t  Target Build Version:" ${TARGET_BUILD_VARIANT}"\n\t  Build Version:"${VERSION}"\033[0m \n\tit's correctly(y/n): \c "
+FOLDER_NAME=${FOLDER_NAME_PRE}${VERSION}"_"${TARGET_BUILD_VARIANT}
+
+echo -e "Please confirm the build information:\n\t \033[49;31;5m Project Name:"${PROJECT_NAME}"\n\t  Target Build Version:" ${TARGET_BUILD_VARIANT}"\n\t  Build Version:"${VERSION}" \n\t The final package folder name: "${FOLDER_NAME}"\n\t Is only make package: "${IS_ONLY_MAKE_PACHAGE}"\033[0m \n\tit's correctly(y/n): \c "
 
 read confirm
 if [ "$confirm" = 'n' ] ;then
   exit
 fi
 
+function cleanDust(){
+        echo -e "`date '+%Y%m%d  %T'` Begin to clean last release version's dust......!"
+	${CKT_HOME}/mk clean
+	rm -rf $CKT_HOME/out
+	rm -rf $CKT_HOME/ckt/*.zip
+        rm -rf $CKT_HOME/ckt/.bin
+}
+
 #build target version 
-if [ "$TARGET_BUILD_VARIANT" = 'user' ] ;then
-   ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME new
-   ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME otapackage
-   sh ${CKT_HOME}/ckt/ckt_release.sh
-elif [ "$TARGET_BUILD_VARIANT" = 'eng' ] ;then
-   echo "Begin to release engineering version, please wait a moment!"
-   ${CKT_HOME}/mk $PROJECT_NAME new
-   ${CKT_HOME}/mk $PROJECT_NAME otapackage
-   sh ${CKT_HOME}/ckt/ckt_release.sh
-else
-   echo "The version is maked, make the release package, please wait a moment!"
-   TARGET_BUILD_VARIANT=${TARGET_BUILD_VARIANT#*_}
+if [ "$IS_ONLY_MAKE_PACHAGE" = "n" ] ;then
+	echo "+=========================================================================================+"
+	echo "+=                    `date '+%Y%m%d  %T'` Call 'mk' to make version...                    =+"
+	echo "+=========================================================================================+"
+
+	#clear dust
+	cleanDust;
+
+	if [ "$TARGET_BUILD_VARIANT" = 'user' ] ;then
+	   ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME new
+	   ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME otapackage
+	   sh ${CKT_HOME}/ckt/ckt_release.sh
+	elif [ "$TARGET_BUILD_VARIANT" = 'eng' ] ;then
+	   ${CKT_HOME}/mk $PROJECT_NAME new
+	   ${CKT_HOME}/mk $PROJECT_NAME otapackage
+	   sh ${CKT_HOME}/ckt/ckt_release.sh
+	fi
 fi
 
 #make dir
-echo "making dir..."
-FOLDER_NAME=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION$VERSION"_"$TARGET_BUILD_VARIANT
+echo "+=========================================================================================+"
+echo "+=                  `date '+%Y%m%d  %T'` begin make ota package...                         =+"
+echo "+=========================================================================================+"
+
 rm -rf $FOLDER_NAME
 mkdir $FOLDER_NAME
 cd $FOLDER_NAME
-UPDATE_FOLDER=${FOLDER_NAME}"_"${TARGET_BUILD_VARIANT}
-OTA_FOLDER=${FOLDER_NAME}"_"${TARGET_BUILD_VARIANT}"_ota"
+UPDATE_FOLDER=$FOLDER_NAME
+OTA_FOLDER=${FOLDER_NAME}"_ota"
 mkdir $UPDATE_FOLDER
 mkdir $OTA_FOLDER
 cd $UPDATE_FOLDER
@@ -152,12 +200,12 @@ mkdir sdcard_ota
 mkdir usb_ota
 
 #copy sdcard ota
-echo "copy sdcard ota to folder..."
+echo -e "`date '+%Y%m%d  %T'` copy sdcard ota to folder..."
 cd sdcard_ota
 cp -f $CKT_HOME/out/target/product/$PROJECT_NAME/$PROJECT_NAME-ota-*.zip ./update.zip
 
 #copy usb ota
-echo "copy usb ota to folder..."
+echo -e "`date '+%Y%m%d  %T'` copy usb ota to folder..."
 cd ../usb_ota
 cp -f $CKT_HOME/ckt/.zip ./usb_ota.zip
 unzip ./usb_ota.zip
@@ -166,33 +214,57 @@ rm -rf ./ckt
 rm -f ./usb_ota.zip
 
 #copy middle ota
-echo "copy midlle ota to folder..."
+echo -e "`date '+%Y%m%d  %T'` copy midlle ota to folder..."
 cd ../../$OTA_FOLDER
 cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip ./
 
 #copy modem
-echo "copy modem to folder..."
+echo -e "`date '+%Y%m%d  %T'` copy modem to folder..."
 cd ../$UPDATE_FOLDER/usb_ota/${UPDATE_FOLDER}".bin"/DATABASE/
 MODEM_DIR_T=`sed -n '/^CUSTOM_MODEM/p' "$PROJECT_CONFIG_FILE"`
 CUSTOM_MODEM=${MODEM_DIR_T#*=}
 
-#MODEM_NAME_T1=`sed -n '/^DATABASE_SOURCE/p' "$CKT_HOME/ckt/ckt_release.sh"`
-#MODEM_NAME_T2=${MODEM_NAME_T1/\"/}
-#MODEM_NAME=${MODEM_NAME_T2/\\/}
-#eval $MODEM_NAME
-
 cp -f $CKT_HOME_MTK_MODEM/$CUSTOM_MODEM/BPLGUInfoCustomAppSrcP_* ./
 
 #make ota different split package
+echo "+=========================================================================================+"
+echo "+=      `date '+%Y%m%d  %T'` begin to make ota different split package...                  =+"
+echo "+=========================================================================================+"
 cd $OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR
+DELETE_LINE_INPUT=`ls -t|awk -v a=$(pwd) '{print a"/"$0}'|sed -n '2, 10000p'|sed 'H;$!d;g;s/\n/  /g'`
+rm -rf $DELETE_LINE_INPUT
+
 DIFFERENT_INPUT=`ls -t|awk -v a=$(pwd) '{print a"/"$0}'|sed -n '1p'|sed 'H;$!d;g;s/\n/  /g'`
 
+#make update ota package naem
+UPDATE_OTA_PACKAGE_NAME=""
+SHORT_PROJECT_NAME=""
+function makeUpdateOtaPackageName(){
+	local T=`echo $VERSION|tr -cd '[0-9\n]'`
+	local N=`expr $T \- 1`
+	local S=`echo $N|awk '{printf "%03s\n" ,$0}'` #add '0' if length less than 3 at left
+        local V_T=${VERSION/$T/$S}
+        local V=`echo $V_T|tr '[:upper:]' '[:lower:]'`
+        
+	#make short project name
+        local SHORT_PROJECT_NAME_T=${HWV_PROJECT_NAME#*-}
+	SHORT_PROJECT_NAME=`echo $SHORT_PROJECT_NAME_T|tr '[:upper:]' '[:lower:]'`
+
+        local V_N=`echo $VERSION|tr '[:upper:]' '[:lower:]'` 
+        
+        UPDATE_OTA_PACKAGE_NAME=${SHORT_PROJECT_NAME}_${V}"--"${V_N}"_"${TARGET_BUILD_VARIANT}".zip"
+}
+
+makeUpdateOtaPackageName;
+OTA_DIFF_FILE=$OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR/$UPDATE_OTA_PACKAGE_NAME
+
 cd $CKT_HOME
-./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $DIFFERENT_INPUT $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip $HOME/project_build/ckt_version_release/update.zip
+./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $DIFFERENT_INPUT $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $OTA_DIFF_FILE
 
 cd $OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR
 mv $CKT_HOME/$FOLDER_NAME ./
-cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip $OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR/${HWV_PROJECT_NAME}"_"${VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
 
-echo -e "The release package is: \033[49;31;5m $FOLDER_NAME.zip \033[0m and the ota different split package is \033[49;31;5m update.zip \033[0m DOWN"
+cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip $OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR/${SHORT_PROJECT_NAME}"_"${VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
+
+echo -e "`date '+%Y%m%d  %T'` The release package is: \033[49;31;5m $FOLDER_NAME.zip \033[0m and the ota different split package is \033[49;31;5m update.zip \033[0m DOWN"
 
