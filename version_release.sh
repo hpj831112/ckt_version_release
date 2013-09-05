@@ -272,13 +272,6 @@ cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NA
 echo -e "`date '+%Y%m%d  %T'` The release package is: \033[49;31;5m $FOLDER_NAME.zip \033[0m and the ota different split package is \033[49;31;5m update.zip \033[0m DOWN"
 
 
-
-
-
-
-
-#makeVerdorOtaFile;
-
 #  add for make vendor ota file
 function makeVendorOtaFile() {
     VENDOR="huawei"
@@ -292,39 +285,46 @@ function makeVendorOtaFile() {
 
     echo "making ${VENDOR} ota file, please wait..."
 
-    cd $FOLDER_NAME
+    cd $OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR
 
     echo "copying template... "
 
     mkdir $OTA_UPDATE_FOLDER
     cd $OTA_UPDATE_FOLDER
 
-    cp -rf ${VERSION_RELEASE_SHELL_FOLDER}/data/${VENDOR}"_ota"/* ./
-    cd ${UPDATE_PACKAGE_DIR}
+    cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/$UPDATE_PACKAGE_DIR ./
+    cd $UPDATE_PACKAGE_DIR
+    mkdir $FULL_DIR
+    mkdir $INCREMENT_DIR
 
     #  modify xml about the ota info
     echo "modify ota xml config file..."
-    cd ${OTA_CONFIG_DIR}
+
+    cd $OTA_CONFIG_DIR
+
     CHANAGE_LOG_FILE="chanagelog.xml"
     FILE_LIST_FILE="filelist.xml"
+
     FEATURE_CONTENT="<feature>${PREVIOUS_VERSION} to ${FOLDER_NAME_PRE}${VERSION}</feature>"
+
+    OTA_DIFF_MD5_CONTENT="<md5>"${OTA_DIFF_MD5}"</md5>"
+    OTA_DIFF_FILE_SIZE_CONTENT="<size>"${OTA_DIFF_FILE_SIZE}"</size>"
+
+    sed -i '7c'${FEATURE_CONTENT}'' $CHANAGE_LOG_FILE
+    sed -i '12c'${FEATURE_CONTENT}'' $CHANAGE_LOG_FILE 
+
+    CHANAGE_LOG_MD5=`md5sum ${CHANAGE_LOG_FILE} | cut -d' ' -f1`
+    CHANAGE_LOG_FILE_SIZE=`ls -la ${CHANAGE_LOG_FILE} | cut -d' ' -f5`
     CHANAGE_LOG_MD5_CONTENT="<md5>"${CHANAGE_LOG_MD5}"</md5>"
     CHANAGE_LOG_FILE_SIZE_CONTENT="<size>"${CHANAGE_LOG_FILE_SIZE}"</size>"
-    OTA_DIFF_MD5_CONTENT="<md5>"${OTA_DIFF_MD5}"</md5>"
-    OTA_DIFF_FILE_SIZE_CONTENT="<size>"{$OTA_DIFF_FILE_SIZE}"</size>"
-    sed '7s/.*/'${FEATURE_CONTENT}'' ${CHANAGE_LOG_FILE}
-    sed '12s/.*/'${FEATURE_CONTENT}'' ${CHANAGE_LOG_FILE} 
 
-    CHANAGE_LOG_MD5=$(md5sum ${CHANAGE_LOG_FILE} | cut -d' ' -f1)
-    CHANAGE_LOG_FILE_SIZE= (ls -la ${CHANAGE_LOG_FILE} | cut -d' ' -f5)
-
-    sed '12s/.*/'${CHANAGE_LOG_MD5_CONTENT}'' ${FILE_LIST_FILE}
-    sed '13s/.*/'${CHANAGE_LOG_FILE_SIZE_CONTENT}'' ${FILE_LIST_FILE} 
+    sed -i '12c'${CHANAGE_LOG_MD5_CONTENT}'' $FILE_LIST_FILE
+    sed -i '13c'"${CHANAGE_LOG_FILE_SIZE_CONTENT}"'' $FILE_LIST_FILE 
     
-    sed '16s/.*/<spath>'${UPDATE_OTA_PACKAGE_NAME}'</spath>' ${FILE_LIST_FILE}
-    sed '17s/.*/<dpath>'${UPDATE_OTA_PACKAGE_NAME}'</dpath>' ${FILE_LIST_FILE}
-    sed '19s/.*/'${FILE_LIST_MD5_CONTENT}'' ${FILE_LIST_FILE}
-    sed '20s/.*/'${FILE_LIST_FILE_SIZE_CONTENT}'' ${FILE_LIST_FILE}
+    sed -i '16c'<spath>${UPDATE_OTA_PACKAGE_NAME}</spath>'' $FILE_LIST_FILE
+    sed -i '17c'<dpath>${UPDATE_OTA_PACKAGE_NAME}</dpath>'' $FILE_LIST_FILE
+    sed -i '19c'${FILE_LIST_MD5_CONTENT}'' $FILE_LIST_FILE
+    sed -i '20c'${FILE_LIST_FILE_SIZE_CONTENT}'' $FILE_LIST_FILE
 
     cd ..
 
@@ -340,9 +340,11 @@ function makeVendorOtaFile() {
 
     # package the ota file
     echo "packaging the ota file..."
-    tar -zxvf updatepackage.zip updatepackage/
+    zip updatepackage.zip updatepackage/
     rm -rf "updatepackage"
     echo "package finished!"
 
-    # print the final info, done
+    # print the final info, donesss
 }
+
+makeVendorOtaFile;
