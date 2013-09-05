@@ -196,3 +196,78 @@ cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NA
 
 echo -e "The release package is: \033[49;31;5m $FOLDER_NAME.zip \033[0m and the ota different split package is \033[49;31;5m update.zip \033[0m DOWN"
 
+
+
+
+
+
+
+#makeVerdorOtaFile;
+
+#  add for make vendor ota file
+function makeVendorOtaFile() {
+    VENDOR="huawei"
+    OTA_UPDATE_FOLDER="ota_update_file";
+    OTA_DIFF_FILE_MD5=$(md5sum ${OTA_DIFF_FILE} | cut -d' ' -f1)
+    OTA_DIFF_FILE_SIZE=$(ls -la $OTA_DIFF_FILE | cut -d' ' -f5)
+    FULL_DIR="full"
+    INCREMENT_DIR="increment"
+    OTA_CONFIG_DIR="config"
+    UPDATE_PACKAGE_DIR="updatepackage"
+
+    echo "making ${VENDOR} ota file, please wait..."
+
+    cd $FOLDER_NAME
+
+    echo "copying template... "
+
+    mkdir $OTA_UPDATE_FOLDER
+    cd $OTA_UPDATE_FOLDER
+
+    cp -rf ${VERSION_RELEASE_SHELL_FOLDER}/data/${VENDOR}"_ota"/* ./
+    cd ${UPDATE_PACKAGE_DIR}
+
+    #  modify xml about the ota info
+    echo "modify ota xml config file..."
+    cd ${OTA_CONFIG_DIR}
+    CHANAGE_LOG_FILE="chanagelog.xml"
+    FILE_LIST_FILE="filelist.xml"
+    FEATURE_CONTENT="<feature>${PREVIOUS_VERSION} to ${FOLDER_NAME_PRE}${VERSION}</feature>"
+    CHANAGE_LOG_MD5_CONTENT="<md5>"${CHANAGE_LOG_MD5}"</md5>"
+    CHANAGE_LOG_FILE_SIZE_CONTENT="<size>"${CHANAGE_LOG_FILE_SIZE}"</size>"
+    OTA_DIFF_MD5_CONTENT="<md5>"${OTA_DIFF_MD5}"</md5>"
+    OTA_DIFF_FILE_SIZE_CONTENT="<size>"{$OTA_DIFF_FILE_SIZE}"</size>"
+    sed '7s/.*/'${FEATURE_CONTENT}'' ${CHANAGE_LOG_FILE}
+    sed '12s/.*/'${FEATURE_CONTENT}'' ${CHANAGE_LOG_FILE} 
+
+    CHANAGE_LOG_MD5=$(md5sum ${CHANAGE_LOG_FILE} | cut -d' ' -f1)
+    CHANAGE_LOG_FILE_SIZE= (ls -la ${CHANAGE_LOG_FILE} | cut -d' ' -f5)
+
+    sed '12s/.*/'${CHANAGE_LOG_MD5_CONTENT}'' ${FILE_LIST_FILE}
+    sed '13s/.*/'${CHANAGE_LOG_FILE_SIZE_CONTENT}'' ${FILE_LIST_FILE} 
+    
+    sed '16s/.*/<spath>'${UPDATE_OTA_PACKAGE_NAME}'</spath>' ${FILE_LIST_FILE}
+    sed '17s/.*/<dpath>'${UPDATE_OTA_PACKAGE_NAME}'</dpath>' ${FILE_LIST_FILE}
+    sed '19s/.*/'${FILE_LIST_MD5_CONTENT}'' ${FILE_LIST_FILE}
+    sed '20s/.*/'${FILE_LIST_FILE_SIZE_CONTENT}'' ${FILE_LIST_FILE}
+
+    cd ..
+
+    # copy xml file and ota file to  dir
+    echo "copying ${CHANAGE_LOG_FILE}  ${FILE_LIST_FILE} and ${UPDATE_OTA_PACKAGE_NAME} to ${FULL_DIR} and ${INCREMENT_DIR}"
+    cp ${OTA_CONFIG_DIR}/${CHANAGE_LOG_FILE} ${FULL_DIR}/
+    cp ${OTA_CONFIG_DIR}/${FILE_LIST_FILE} ${FULL_DIR}/
+    cp ${OTA_DIFF_FILE} ${FULL_DIR}/ 
+    cp ${OTA_CONFIG_DIR}/${CHANAGE_LOG_FILE} ${INCREMENT_DIR}/
+    cp ${OTA_CONFIG_DIR}/${FILE_LIST_FILE} ${INCREMENT_DIR}/
+    cp ${OTA_DIFF_FILE} ${INCREMENT_DIR}/
+    cd .. 
+
+    # package the ota file
+    echo "packaging the ota file..."
+    tar -zxvf updatepackage.zip updatepackage/
+    rm -rf "updatepackage"
+    echo "package finished!"
+
+    # print the final info, done
+}
