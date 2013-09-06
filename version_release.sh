@@ -274,77 +274,63 @@ echo -e "`date '+%Y%m%d  %T'` The release package is: \033[49;31;5m $FOLDER_NAME
 
 #  add for make vendor ota file
 function makeVendorOtaFile() {
-    VENDOR="huawei"
-    OTA_UPDATE_FOLDER="ota_update_file";
-    OTA_DIFF_FILE_MD5=$(md5sum ${OTA_DIFF_FILE} | cut -d' ' -f1)
-    OTA_DIFF_FILE_SIZE=$(ls -la $OTA_DIFF_FILE | cut -d' ' -f5)
-    FULL_DIR="full"
-    INCREMENT_DIR="increment"
-    OTA_CONFIG_DIR="config"
-    UPDATE_PACKAGE_DIR="updatepackage"
-
-    echo "making ${VENDOR} ota file, please wait..."
-
     cd $OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR
 
-    echo "copying template... "
+    local VENDOR="huawei"
+    local OTA_UPDATE_FOLDER="ota_update_file";
+    local FULL_DIR="full"
+    local OTA_CONFIG_DIR="config"
+    local UPDATE_PACKAGE_DIR="updatepackage"
+    local CHANAGE_LOG_FILE="changelog.xml"
+    local FILE_LIST_FILE="filelist.xml"
 
+    rm -rf $OTA_UPDATE_FOLDER
     mkdir $OTA_UPDATE_FOLDER
-    cd $OTA_UPDATE_FOLDER
 
+    cd $OTA_UPDATE_FOLDER
     cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/$UPDATE_PACKAGE_DIR ./
+
     cd $UPDATE_PACKAGE_DIR
     mkdir $FULL_DIR
-    mkdir $INCREMENT_DIR
-
-    #  modify xml about the ota info
-    echo "modify ota xml config file..."
 
     cd $OTA_CONFIG_DIR
+    local VERSION_CONTENT="<component name=\"TCPU\" version=\"$FOLDER_NAME_PRE\"\/\>"
+    local FEATURE_CONTENT="\<feature\>$PREVIOUS_VERSION to ${FOLDER_NAME_PRE}${VERSION}\<\/feature\>"
+    sed -i "3s/.*/$VERSION_CONTENT/g" "$CHANAGE_LOG_FILE"
+    sed -i "7s/.*/$FEATURE_CONTENT/g" "$CHANAGE_LOG_FILE"
+    sed -i "12s/.*/$FEATURE_CONTENT/g" "$CHANAGE_LOG_FILE"
 
-    CHANAGE_LOG_FILE="chanagelog.xml"
-    FILE_LIST_FILE="filelist.xml"
+    local CHANAGE_LOG_MD5_CONTENT="\<md5\>"`md5sum $CHANAGE_LOG_FILE | cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`"\<\/md5\>"
+    local CHANAGE_LOG_FILE_SIZE_CONTENT="\<size\>"`ls -la $CHANAGE_LOG_FILE | cut -d' ' -f5`"\<\/size\>"
+    sed -i "12s/.*/$CHANAGE_LOG_MD5_CONTENT/g" "$FILE_LIST_FILE"
+    sed -i "13s/.*/$CHANAGE_LOG_FILE_SIZE_CONTENT/g" "$FILE_LIST_FILE"
 
-    FEATURE_CONTENT="<feature>${PREVIOUS_VERSION} to ${FOLDER_NAME_PRE}${VERSION}</feature>"
+    local SAPTH="\<spath\>$UPDATE_OTA_PACKAGE_NAME\<\/spath\>"
+    local DPATH="\<dpath\>$UPDATE_OTA_PACKAGE_NAME\<\/dpath\>"
+    sed -i "16s/.*/$SAPTH/g" "$FILE_LIST_FILE"
+    sed -i "17s/.*/$DPATH/g" "$FILE_LIST_FILE"
 
-    OTA_DIFF_MD5_CONTENT="<md5>"${OTA_DIFF_MD5}"</md5>"
-    OTA_DIFF_FILE_SIZE_CONTENT="<size>"${OTA_DIFF_FILE_SIZE}"</size>"
-
-    sed -i '7c'${FEATURE_CONTENT}'' $CHANAGE_LOG_FILE
-    sed -i '12c'${FEATURE_CONTENT}'' $CHANAGE_LOG_FILE 
-
-    CHANAGE_LOG_MD5=`md5sum ${CHANAGE_LOG_FILE} | cut -d' ' -f1`
-    CHANAGE_LOG_FILE_SIZE=`ls -la ${CHANAGE_LOG_FILE} | cut -d' ' -f5`
-    CHANAGE_LOG_MD5_CONTENT="<md5>"${CHANAGE_LOG_MD5}"</md5>"
-    CHANAGE_LOG_FILE_SIZE_CONTENT="<size>"${CHANAGE_LOG_FILE_SIZE}"</size>"
-
-    sed -i '12c'${CHANAGE_LOG_MD5_CONTENT}'' $FILE_LIST_FILE
-    sed -i '13c'"${CHANAGE_LOG_FILE_SIZE_CONTENT}"'' $FILE_LIST_FILE 
-    
-    sed -i '16c'<spath>${UPDATE_OTA_PACKAGE_NAME}</spath>'' $FILE_LIST_FILE
-    sed -i '17c'<dpath>${UPDATE_OTA_PACKAGE_NAME}</dpath>'' $FILE_LIST_FILE
-    sed -i '19c'${FILE_LIST_MD5_CONTENT}'' $FILE_LIST_FILE
-    sed -i '20c'${FILE_LIST_FILE_SIZE_CONTENT}'' $FILE_LIST_FILE
+    local OTA_DIFF_MD5_CONTENT="\<md5\>`md5sum $OTA_DIFF_FILE | cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`\<\/md5\>"
+    local OTA_DIFF_FILE_SIZE_CONTENT="\<size\>`ls -la $OTA_DIFF_FILE | cut -d' ' -f5`\<\/size\>"
+    sed -i "19s/.*/$OTA_DIFF_MD5_CONTENT/g" "$FILE_LIST_FILE"
+    sed -i "20s/.*/$OTA_DIFF_FILE_SIZE_CONTENT/g" "$FILE_LIST_FILE"
 
     cd ..
 
     # copy xml file and ota file to  dir
-    echo "copying ${CHANAGE_LOG_FILE}  ${FILE_LIST_FILE} and ${UPDATE_OTA_PACKAGE_NAME} to ${FULL_DIR} and ${INCREMENT_DIR}"
-    cp ${OTA_CONFIG_DIR}/${CHANAGE_LOG_FILE} ${FULL_DIR}/
-    cp ${OTA_CONFIG_DIR}/${FILE_LIST_FILE} ${FULL_DIR}/
-    cp ${OTA_DIFF_FILE} ${FULL_DIR}/ 
-    cp ${OTA_CONFIG_DIR}/${CHANAGE_LOG_FILE} ${INCREMENT_DIR}/
-    cp ${OTA_CONFIG_DIR}/${FILE_LIST_FILE} ${INCREMENT_DIR}/
-    cp ${OTA_DIFF_FILE} ${INCREMENT_DIR}/
+    echo "copying $CHANAGE_LOG_FILE $FILE_LIST_FILE and $UPDATE_OTA_PACKAGE_NAME to $FULL_DIR"
+    cp $OTA_CONFIG_DIR/$CHANAGE_LOG_FILE $FULL_DIR/
+    cp $OTA_CONFIG_DIR/$FILE_LIST_FILE $FULL_DIR/
+    cp $OTA_DIFF_FILE $FULL_DIR/ 
+
+    rm -rf $OTA_CONFIG_DIR
     cd .. 
 
     # package the ota file
     echo "packaging the ota file..."
-    zip updatepackage.zip updatepackage/
+    zip -rm "updatepackage.zip" updatepackage/
     rm -rf "updatepackage"
     echo "package finished!"
-
-    # print the final info, donesss
 }
 
 makeVendorOtaFile;
