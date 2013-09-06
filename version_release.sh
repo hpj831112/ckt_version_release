@@ -274,7 +274,6 @@ echo -e "`date '+%Y%m%d  %T'` The release package is: \033[49;31;5m $FOLDER_NAME
 
 #  add for make vendor ota file
 function makeVendorOtaFile() {
-    cd $OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR
 
     local VENDOR="huawei"
     local OTA_UPDATE_FOLDER="ota_update_file";
@@ -283,6 +282,9 @@ function makeVendorOtaFile() {
     local UPDATE_PACKAGE_DIR="updatepackage"
     local CHANAGE_LOG_FILE="changelog.xml"
     local FILE_LIST_FILE="filelist.xml"
+
+    cd $OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR
+    cd $FOLDER_NAME
 
     rm -rf $OTA_UPDATE_FOLDER
     mkdir $OTA_UPDATE_FOLDER
@@ -294,7 +296,7 @@ function makeVendorOtaFile() {
     mkdir $FULL_DIR
 
     cd $OTA_CONFIG_DIR
-    local VERSION_CONTENT="<component name=\"TCPU\" version=\"$FOLDER_NAME_PRE\"\/\>"
+    local VERSION_CONTENT="<component name=\"TCPU\" version=\"${FOLDER_NAME_PRE}${VERSION}\"\/\>"
     local FEATURE_CONTENT="\<feature\>$PREVIOUS_VERSION to ${FOLDER_NAME_PRE}${VERSION}\<\/feature\>"
     sed -i "3s/.*/$VERSION_CONTENT/g" "$CHANAGE_LOG_FILE"
     sed -i "7s/.*/$FEATURE_CONTENT/g" "$CHANAGE_LOG_FILE"
@@ -329,7 +331,6 @@ function makeVendorOtaFile() {
     # package the ota file
     echo "packaging the ota file..."
     zip -rm "updatepackage.zip" updatepackage/
-    rm -rf "updatepackage"
     echo "package finished!"
 }
 
