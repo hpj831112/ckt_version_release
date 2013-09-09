@@ -3,7 +3,7 @@
 echo "*******************************************************************************************"
 echo "*                                                                                         *"
 echo "*                                  CKT VERSION RELEAS                                     *"
-echo "*                                  VERSION beta-v1.0                                      *"
+echo "*                                  VERSION beta-v1.0.1                                    *"
 echo "*                           AUTROR HePeijiang ZhaoDan YaoZhilin                           *"
 echo "*                (c) Copyright ckt version release 2013.  All rights reserved.            *"
 echo "*                                                                                         *"
@@ -20,17 +20,26 @@ TARGET_BUILD_VARIANT="user"
 #version
 VERSION=""
 
+#interior version
+INTERNAL_VERSION=""
+
 #only make package
 IS_ONLY_MAKE_PACHAGE="n"
+
+#the last version which user want to compare
+LAST_VERSION=""
 
 #last version package name
 LAST_VERSION_PACKAGE_NAME=""
 
 #user introduction
-USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-z n or y] [-O last version_package_name] [-x supper_packaged_option] [-? show_this_message] "
+USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-z n or y] [-O last version_package_name] [-O last version] [-x supper_packaged_option] [-? show_this_message] "
 
 #option count
 OPTION_COUNT=$#
+
+#record if the menu is showed
+IS_MENU_SHOW="T"
 
 function checkCommandExc(){
 	if [ $? -ne 0 ];then
@@ -73,12 +82,13 @@ function fShowMenu(){
 }
 
 
-if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ] ;then
+if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ]; then
    fShowMenu;
+   IS_MENU_SHOW="T"
 fi
 
 #read user input options
-while getopts ":p:t:v:z:o:x" opt; do
+while getopts ":p:t:v:i:z:o:l:x" opt; do
     case $opt in
         p ) PROJECT_NAME=$OPTARG 
             ;;
@@ -86,9 +96,13 @@ while getopts ":p:t:v:z:o:x" opt; do
             ;;
         v ) VERSION=$OPTARG 
             ;;
+        i ) INTERNAL_VERSION=$OPTARG
+            ;;
         z ) IS_ONLY_MAKE_PACHAGE=$OPTARG 
             ;;
         O ) LAST_VERSION_PACKAGE_NAME=$OPTARG 
+            ;;
+        l ) LAST_VERSION=$OPTARG 
             ;;
        \x ) IS_ONLY_MAKE_PACHAGE="y"
             ;;
@@ -97,6 +111,19 @@ while getopts ":p:t:v:z:o:x" opt; do
             ;;
     esac
 done
+
+function tipUserInputLastVersion(){
+	if [ "$IS_MENU_SHOW"="T" ] && [ -z "$LAST_VERSION" ]; then
+		echo -e "\033[49;31;5m You must input the version which you want to compare \033[0m, The version is: \c "
+		read VSN
+		if [ -z "$VSN" ] ;then
+		    tipUserInputLastVersion;
+		else
+		    LAST_VERSION=$VSN
+		fi
+	fi
+}
+tipUserInputLastVersion;
 
 #defind global vars
 CKT_HOME=`pwd`
@@ -124,6 +151,7 @@ fi
 #get version param
 FOLDER_NAME_PRE=""
 HWV_BUILD_VERSION=""
+HWV_BUILDINTERNAL_VERSION=""
 HWV_PROJECT_NAME=""
 
 function getVersionParam(){
@@ -140,6 +168,9 @@ function getVersionParam(){
 	local HWV_CUSTOM_VERSION_T=`sed -n '/^HWV_CUSTOM_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
         checkCommandExc;
 
+	local HWV_BUILDINTERNAL_VERSION_T=`sed -n '/^HWV_BUILDINTERNAL_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+        checkCommandExc;
+
 	local HWV_BUILD_VERSION_T=`sed -n '/^HWV_BUILD_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
         checkCommandExc;
 
@@ -148,9 +179,11 @@ function getVersionParam(){
 	local HWV_RELEASE_NAME=${HWV_RELEASE_NAME_T#*=}
 	local HWV_CUSTOM_VERSION=${HWV_CUSTOM_VERSION_T#*=}
 	HWV_BUILD_VERSION=${HWV_BUILD_VERSION_T#*=}
+        HWV_BUILDINTERNAL_VERSION=${HWV_BUILDINTERNAL_VERSION_T#*=}
 
 	if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ];then
 		VERSION=$HWV_BUILD_VERSION
+		INTERNAL_VERSION=$HWV_BUILDINTERNAL_VERSION
 	fi
 
         FOLDER_NAME_PRE=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION
@@ -158,10 +191,11 @@ function getVersionParam(){
 
 getVersionParam;
 
+#modify external version
 if [ -z "$VERSION" ];then
 	#defind target build version
-	echo -e "Current build version is: \033[49;31;5m $HWV_BUILD_VERSION \033[0m would you like to build the version?"
-        echo "If is please click Enter to continue, else please input your build version: \c "
+	echo -e "Current external version is: \033[49;31;5m $HWV_BUILD_VERSION \033[0m would you like to build this version?"
+        echo "If is please click Enter to continue, else please input your external version: \c "
 
 	#make folder name add set build version in project config file
 	read BUILD_VERSION
@@ -180,6 +214,33 @@ if [ -z "$VERSION" ];then
 else
    if [ $VERSION != $HWV_BUILD_VERSION ] ;then
       sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
+      checkCommandExc;
+   fi
+fi
+
+#modify internal version
+if [ -z "$INTERNAL_VERSION" ];then
+	#defind target build version
+	echo -e "Current internal version is: \033[49;31;5m $HWV_BUILDINTERNAL_VERSION \033[0m would you like to build this internal version?"
+        echo "If is please click Enter to continue, else please input your internal version: \c "
+
+	#make folder name add set build version in project config file
+	read INTERNAL_VERSION_T
+	INTERNAL_VERSION=$INTERNAL_VERSION_T
+
+	if [ -z "$INTERNAL_VERSION" ] ;then
+	    INTERNAL_VERSION=$HWV_BUILDINTERNAL_VERSION
+	fi
+
+	if [ -n "$INTERNAL_VERSION" ] ;then
+	    if [ $INTERNAL_VERSION != $HWV_BUILDINTERNAL_VERSION ] ;then   
+	       sed -i "s/HWV_BUILDINTERNAL_VERSION \= $HWV_BUILDINTERNAL_VERSION/HWV_BUILDINTERNAL_VERSION \= $INTERNAL_VERSION/g" "$PROJECT_CONFIG_FILE"
+               checkCommandExc;
+	    fi
+	fi
+else
+   if [ $INTERNAL_VERSION != $HWV_BUILDINTERNAL_VERSION ] ;then
+      sed -i "s/HWV_BUILDINTERNAL_VERSION \= $HWV_BUILDINTERNAL_VERSION/HWV_BUILDINTERNAL_VERSION \= $INTERNAL_VERSION/g" "$PROJECT_CONFIG_FILE"
       checkCommandExc;
    fi
 fi
@@ -343,31 +404,49 @@ fi
 
 #make update ota package naem
 UPDATE_OTA_PACKAGE_NAME=""
+UPDATE_OTA_PACKAGE_NAME_VALIDATE=""
 SHORT_PROJECT_NAME=""
 PREVIOUS_VERSION=""
 function makeUpdateOtaPackageName(){
-	local T=`echo $VERSION|tr -cd '[0-9\n]'`
-	local N=`expr $T \- 1`
-	local S=`echo $N|awk '{printf "%03s\n" ,$0}'` #add '0' if length less than 3 at left
-        local V_T=${VERSION/$T/$S}
-
-        PREVIOUS_VERSION=${FOLDER_NAME_PRE}${V_T}
-        local V=`echo $V_T|tr '[:upper:]' '[:lower:]'`
-        
 	#make short project name
-        local SHORT_PROJECT_NAME_T=${HWV_PROJECT_NAME#*-}
+	local SHORT_PROJECT_NAME_T=${HWV_PROJECT_NAME#*-}
 	SHORT_PROJECT_NAME=`echo $SHORT_PROJECT_NAME_T|tr '[:upper:]' '[:lower:]'`
 
-        local V_N=`echo $VERSION|tr '[:upper:]' '[:lower:]'` 
+	local V_N=`echo $VERSION|tr '[:upper:]' '[:lower:]'` 
+        local V=""
+
+        if [ "$LAST_VERSION" = "default" ] || [ "$LAST_VERSION" = "d" ] || [ "$LAST_VERSION" = "dflt" ]; then
+		local T=`echo $VERSION|tr -cd '[0-9\n]'`
+		local N=`expr $T \- 1`
+		local S=`echo $N|awk '{printf "%03s\n" ,$0}'` #add '0' if length less than 3 at left
+		local V_T=${VERSION/$T/$S}
+
+		PREVIOUS_VERSION=${FOLDER_NAME_PRE}${V_T}
+		V=`echo $V_T|tr '[:upper:]' '[:lower:]'`	
+	else
+		PREVIOUS_VERSION=${FOLDER_NAME_PRE}${LAST_VERSION}
+		V=`echo $LAST_VERSION|tr '[:upper:]' '[:lower:]'`
+	fi
         
         UPDATE_OTA_PACKAGE_NAME=${SHORT_PROJECT_NAME}_${V}"--"${V_N}"_"${TARGET_BUILD_VARIANT}".zip"
+	UPDATE_OTA_PACKAGE_NAME_VALIDATE=${V_N}"_"${TARGET_BUILD_VARIANT}"--"${SHORT_PROJECT_NAME}_${V}".zip"
 }
 
 makeUpdateOtaPackageName;
 OTA_DIFF_FILE=$FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$UPDATE_OTA_PACKAGE_NAME
+OTA_DIFF_FILE_VALIDATE=$FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$UPDATE_OTA_PACKAGE_NAME_VALIDATE
 
 cd $CKT_HOME
+
+#buil true ota different split package
 ./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$LAST_VERSION_PACKAGE_NAME $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $OTA_DIFF_FILE
+checkCommandExc;
+
+echo "+=========================================================================================+"
+echo "+=      `date '+%Y%m%d  %T'` begin to make validate ota different split package...                  =+"
+echo "+=========================================================================================+"
+#buil validate ota different split package
+./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i  $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$LAST_VERSION_PACKAGE_NAME $OTA_DIFF_FILE_VALIDATE
 checkCommandExc;
 
 rm -f $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$LAST_VERSION_PACKAGE_NAME
@@ -377,30 +456,40 @@ cd $FINAL_PACKAGE_SAVE_DIR
 cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/${SHORT_PROJECT_NAME}"_"${VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
 checkCommandExc;
 
+VENDOR=""
+OTA_UPDATE_COMPONENT_NAME=""
+FULL_DIR=""
+OTA_CONFIG_DIR=""
+UPDATE_PACKAGE_DIR=""
+CHANAGE_LOG_FILE=""
+FILE_LIST_FILE=""
+
+function readVendorOtaConfig(){
+    local VENDOR_T=`sed -n '/^VENDOR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    VENDOR=${VENDOR_T#*=}
+
+    local OTA_UPDATE_COMPONENT_NAME_T=`sed -n '/^OTA_UPDATE_COMPONENT_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    OTA_UPDATE_COMPONENT_NAME=${OTA_UPDATE_COMPONENT_NAME_T#*=}
+
+    local FULL_DIR_T=`sed -n '/^OTA_UPDATE_FULL_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    FULL_DIR=${FULL_DIR_T#*=}
+
+    local OTA_CONFIG_DIR_T=`sed -n '/^OTA_UPDATE_CONFIG_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    OTA_CONFIG_DIR=${OTA_CONFIG_DIR_T#*=}
+
+ local UPDATE_PACKAGE_DIR_T=`sed -n '/^OTA_UPDATE_PACKAGE_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    UPDATE_PACKAGE_DIR=${UPDATE_PACKAGE_DIR_T#*=}
+
+    local CHANAGE_LOG_FILE_T=`sed -n '/^OTA_UPDATE_CHANAGE_LOG_FILE/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    CHANAGE_LOG_FILE=${CHANAGE_LOG_FILE_T#*=}
+
+    local FILE_LIST_FILE_T=`sed -n '/^OTA_UPDATE_FILE_LIST_FILE/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    FILE_LIST_FILE=${FILE_LIST_FILE_T#*=}
+}
+
 #  add for make vendor ota file
 function makeVendorOtaFile() {
     cd $FOLDER_NAME/ota_update_file
-
-    local VENDOR_T=`sed -n '/^VENDOR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-    local VENDOR=${VENDOR_T#*=}
-
-    local OTA_UPDATE_COMPONENT_NAME_T=`sed -n '/^OTA_UPDATE_COMPONENT_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-    local OTA_UPDATE_COMPONENT_NAME=${OTA_UPDATE_COMPONENT_NAME_T#*=}
-
-    local FULL_DIR_T=`sed -n '/^OTA_UPDATE_FULL_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-    local FULL_DIR=${FULL_DIR_T#*=}
-
-    local OTA_CONFIG_DIR_T=`sed -n '/^OTA_UPDATE_CONFIG_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-    local OTA_CONFIG_DIR=${OTA_CONFIG_DIR_T#*=}
-
- local UPDATE_PACKAGE_DIR_T=`sed -n '/^OTA_UPDATE_PACKAGE_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-    local UPDATE_PACKAGE_DIR=${UPDATE_PACKAGE_DIR_T#*=}
-
-    local CHANAGE_LOG_FILE_T=`sed -n '/^OTA_UPDATE_CHANAGE_LOG_FILE/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-    local CHANAGE_LOG_FILE=${CHANAGE_LOG_FILE_T#*=}
-
-    local FILE_LIST_FILE_T=`sed -n '/^OTA_UPDATE_FILE_LIST_FILE/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-    local FILE_LIST_FILE=${FILE_LIST_FILE_T#*=}
 
     cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/$UPDATE_PACKAGE_DIR ./
     checkCommandExc;
@@ -464,7 +553,78 @@ function makeVendorOtaFile() {
 
     # package the ota file
     echo "packaging the ota file..."
-    local U_ZIP_NAME=${PREVIOUS_VERSION}${TARGET_BUILD_VARIANT}"--"${FOLDER_NAME}"--updatepackage.zip"
+    local U_ZIP_NAME=${PREVIOUS_VERSION}"_"${TARGET_BUILD_VARIANT}"--"${FOLDER_NAME}"-updatepackage.zip"
+    zip -rm $U_ZIP_NAME updatepackage/
+    echo "package finished!"
+}
+
+#  add for make vendor validate ota file
+function makeVendorOtaValidateFile() {
+    cd $FOLDER_NAME/ota_update_file
+
+    cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/$UPDATE_PACKAGE_DIR ./
+    checkCommandExc;
+
+    cd $UPDATE_PACKAGE_DIR
+    mkdir $FULL_DIR
+
+    cd $OTA_CONFIG_DIR
+    local VERSION_CONTENT="<component name=\"$OTA_UPDATE_COMPONENT_NAME\" version=\"$PREVIOUS_VERSION\"\/\>"
+    local VERSION_CONTENT="<component name=\"TCPU\" version=\"$PREVIOUS_VERSION\"\/\>"
+    local FEATURE_CONTENT="\<feature\>${FOLDER_NAME_PRE}${VERSION} to $PREVIOUS_VERSION\<\/feature\>"
+    sed -i "3s/.*/$VERSION_CONTENT/g" "$CHANAGE_LOG_FILE"
+    checkCommandExc;
+
+    sed -i "7s/.*/$FEATURE_CONTENT/g" "$CHANAGE_LOG_FILE"
+    checkCommandExc;
+
+    sed -i "12s/.*/$FEATURE_CONTENT/g" "$CHANAGE_LOG_FILE"
+    checkCommandExc;
+
+    local CHANAGE_LOG_MD5_CONTENT="\<md5\>"`md5sum $CHANAGE_LOG_FILE | cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`"\<\/md5\>"
+    local CHANAGE_LOG_FILE_SIZE_CONTENT="\<size\>"`ls -la $CHANAGE_LOG_FILE | cut -d' ' -f5`"\<\/size\>"
+    sed -i "12s/.*/$CHANAGE_LOG_MD5_CONTENT/g" "$FILE_LIST_FILE"
+    checkCommandExc;
+
+    sed -i "13s/.*/$CHANAGE_LOG_FILE_SIZE_CONTENT/g" "$FILE_LIST_FILE"
+    checkCommandExc;
+
+    local SAPTH="\<spath\>$UPDATE_OTA_PACKAGE_NAME_VALIDATE\<\/spath\>"
+    local DPATH="\<dpath\>$UPDATE_OTA_PACKAGE_NAME_VALIDATE\<\/dpath\>"
+    sed -i "16s/.*/$SAPTH/g" "$FILE_LIST_FILE"
+    checkCommandExc;
+
+    sed -i "17s/.*/$DPATH/g" "$FILE_LIST_FILE"
+    checkCommandExc;
+
+    local OTA_DIFF_MD5_CONTENT="\<md5\>`md5sum $OTA_DIFF_FILE_VALIDATE | cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`\<\/md5\>"
+    local OTA_DIFF_FILE_SIZE_CONTENT="\<size\>`ls -la $OTA_DIFF_FILE_VALIDATE | cut -d' ' -f5`\<\/size\>"
+    sed -i "19s/.*/$OTA_DIFF_MD5_CONTENT/g" "$FILE_LIST_FILE"
+    checkCommandExc;
+
+    sed -i "20s/.*/$OTA_DIFF_FILE_SIZE_CONTENT/g" "$FILE_LIST_FILE"
+    checkCommandExc;
+
+    cd ..
+
+    # copy xml file and ota file to  dir
+    echo "copying $CHANAGE_LOG_FILE $FILE_LIST_FILE and $UPDATE_OTA_PACKAGE_NAME to $FULL_DIR"
+    cp $OTA_CONFIG_DIR/$CHANAGE_LOG_FILE $FULL_DIR/
+    checkCommandExc;
+
+    cp $OTA_CONFIG_DIR/$FILE_LIST_FILE $FULL_DIR/
+    checkCommandExc;
+
+    cp $OTA_DIFF_FILE_VALIDATE $FULL_DIR/update.zip 
+    rm -f $OTA_DIFF_FILE_VALIDATE
+    checkCommandExc;
+
+    rm -rf $OTA_CONFIG_DIR
+    cd .. 
+
+    # package the ota file
+    echo "packaging the ota file..."
+    local U_ZIP_NAME=${FOLDER_NAME}"--"${PREVIOUS_VERSION}"_"${TARGET_BUILD_VARIANT}"-updatepackage.zip"
     zip -rm $U_ZIP_NAME updatepackage/
     echo "package finished!"
 }
@@ -473,7 +633,15 @@ function makeVendorOtaFile() {
 echo "+=========================================================================================+"
 echo "+=      `date '+%Y%m%d  %T'` begin to make vendor ota file...                  =+"
 echo "+=========================================================================================+"
+
+readVendorOtaConfig;
+
 makeVendorOtaFile;
+
+echo "+=========================================================================================+"
+echo "+=      `date '+%Y%m%d  %T'` begin to make validate vendor ota file...                  =+"
+echo "+=========================================================================================+"
+makeVendorOtaValidateFile;
 
 cd $FINAL_PACKAGE_SAVE_DIR
 ls -lt
