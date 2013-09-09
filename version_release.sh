@@ -377,9 +377,6 @@ cd $FINAL_PACKAGE_SAVE_DIR
 cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/${SHORT_PROJECT_NAME}"_"${VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
 checkCommandExc;
 
-echo -e "`date '+%Y%m%d  %T'` The release package is: \033[49;31;5m $FOLDER_NAME.zip \033[0m and the ota different split package is \033[49;31;5m update.zip \033[0m DOWN"
-
-
 #  add for make vendor ota file
 function makeVendorOtaFile() {
     cd $FOLDER_NAME/ota_update_file
@@ -477,3 +474,7 @@ echo "+=========================================================================
 echo "+=      `date '+%Y%m%d  %T'` begin to make vendor ota file...                  =+"
 echo "+=========================================================================================+"
 makeVendorOtaFile;
+
+cd $FINAL_PACKAGE_SAVE_DIR
+ls -lt
+echo -e "`date '+%Y%m%d  %T'` \033[49;31;5m The final package save dir is: `pwd` \033[0m DOWN" 
