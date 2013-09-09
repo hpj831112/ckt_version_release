@@ -382,7 +382,6 @@ echo -e "`date '+%Y%m%d  %T'` The release package is: \033[49;31;5m $FOLDER_NAME
 
 #  add for make vendor ota file
 function makeVendorOtaFile() {
-<<<<<<< HEAD
     cd $FOLDER_NAME/ota_update_file
 
     local VENDOR_T=`sed -n '/^VENDOR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
@@ -390,13 +389,10 @@ function makeVendorOtaFile() {
 
     local OTA_UPDATE_COMPONENT_NAME_T=`sed -n '/^OTA_UPDATE_COMPONENT_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
     local OTA_UPDATE_COMPONENT_NAME=${OTA_UPDATE_COMPONENT_NAME_T#*=}
-=======
->>>>>>> de263dc7f7a84601ed84d058359dbcb1ff786bec
 
     local FULL_DIR_T=`sed -n '/^OTA_UPDATE_FULL_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
     local FULL_DIR=${FULL_DIR_T#*=}
 
-<<<<<<< HEAD
     local OTA_CONFIG_DIR_T=`sed -n '/^OTA_UPDATE_CONFIG_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
     local OTA_CONFIG_DIR=${OTA_CONFIG_DIR_T#*=}
 
@@ -408,13 +404,6 @@ function makeVendorOtaFile() {
 
     local FILE_LIST_FILE_T=`sed -n '/^OTA_UPDATE_FILE_LIST_FILE/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
     local FILE_LIST_FILE=${FILE_LIST_FILE_T#*=}
-=======
-    cd $OTA_DIFFERENT_SPLIT_PACKAGE_SAVE_DIR
-    cd $FOLDER_NAME
-
-    rm -rf $OTA_UPDATE_FOLDER
-    mkdir $OTA_UPDATE_FOLDER
->>>>>>> de263dc7f7a84601ed84d058359dbcb1ff786bec
 
     cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/$UPDATE_PACKAGE_DIR ./
     checkCommandExc;
@@ -423,11 +412,8 @@ function makeVendorOtaFile() {
     mkdir $FULL_DIR
 
     cd $OTA_CONFIG_DIR
-<<<<<<< HEAD
     local VERSION_CONTENT="<component name=\"$OTA_UPDATE_COMPONENT_NAME\" version=\"${FOLDER_NAME_PRE}${VERSION}\"\/\>"
-=======
     local VERSION_CONTENT="<component name=\"TCPU\" version=\"${FOLDER_NAME_PRE}${VERSION}\"\/\>"
->>>>>>> de263dc7f7a84601ed84d058359dbcb1ff786bec
     local FEATURE_CONTENT="\<feature\>$PREVIOUS_VERSION to ${FOLDER_NAME_PRE}${VERSION}\<\/feature\>"
     sed -i "3s/.*/$VERSION_CONTENT/g" "$CHANAGE_LOG_FILE"
     checkCommandExc;
