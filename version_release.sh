@@ -458,7 +458,7 @@ function makeVendorOtaFile() {
     cp $OTA_CONFIG_DIR/$FILE_LIST_FILE $FULL_DIR/
     checkCommandExc;
 
-    cp $OTA_DIFF_FILE $FULL_DIR/ 
+    cp $OTA_DIFF_FILE $FULL_DIR/update.zip 
     rm -f $OTA_DIFF_FILE
     checkCommandExc;
 
@@ -467,7 +467,8 @@ function makeVendorOtaFile() {
 
     # package the ota file
     echo "packaging the ota file..."
-    zip -rm "updatepackage.zip" updatepackage/
+    local U_ZIP_NAME=${PREVIOUS_VERSION}${TARGET_BUILD_VARIANT}"--"${FOLDER_NAME}"--updatepackage.zip"
+    zip -rm $U_ZIP_NAME updatepackage/
     echo "package finished!"
 }
 
