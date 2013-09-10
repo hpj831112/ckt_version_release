@@ -1,13 +1,4 @@
-#!/bin/bash
-
-echo "*******************************************************************************************"
-echo "*                                                                                         *"
-echo "*                                  CKT VERSION RELEAS                                     *"
-echo "*                                  VERSION beta-v1.0.1                                    *"
-echo "*                           AUTROR HePeijiang ZhaoDan YaoZhilin                           *"
-echo "*                (c) Copyright ckt version release 2013.  All rights reserved.            *"
-echo "*                                                                                         *"
-echo "*******************************************************************************************"                           
+#!/bin/bash                         
 
 ##defind vars
 
@@ -23,23 +14,26 @@ VERSION=""
 #interior version
 INTERNAL_VERSION=""
 
+#the last version which user want to compare
+OTA_COMPARED_VERSION=""
+
 #only make package
 IS_ONLY_MAKE_PACHAGE="n"
 
-#the last version which user want to compare
-LAST_VERSION=""
-
 #last version package name
-LAST_VERSION_PACKAGE_NAME=""
+OTA_COMPARED_VERSION_PACKAGE_NAME=""
 
 #user introduction
-USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-z n or y] [-O last version_package_name] [-O last version] [-x supper_packaged_option] [-? show_this_message] "
+USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-z n or y] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-? show_this_message] "
 
 #option count
 OPTION_COUNT=$#
 
 #record if the menu is showed
 IS_MENU_SHOW="T"
+
+#demaid the copyright is showing
+IS_SHOW_COPYRIGHT="T"
 
 function checkCommandExc(){
 	if [ $? -ne 0 ];then
@@ -81,12 +75,6 @@ function fShowMenu(){
     fi
 }
 
-
-if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ]; then
-   fShowMenu;
-   IS_MENU_SHOW="T"
-fi
-
 #read user input options
 while getopts ":p:t:v:i:z:o:l:x" opt; do
     case $opt in
@@ -100,26 +88,47 @@ while getopts ":p:t:v:i:z:o:l:x" opt; do
             ;;
         z ) IS_ONLY_MAKE_PACHAGE=$OPTARG 
             ;;
-        O ) LAST_VERSION_PACKAGE_NAME=$OPTARG 
+        o ) OTA_COMPARED_VERSION_PACKAGE_NAME=$OPTARG 
             ;;
-        l ) LAST_VERSION=$OPTARG 
+        l ) OTA_COMPARED_VERSION=$OPTARG 
             ;;
        \x ) IS_ONLY_MAKE_PACHAGE="y"
             ;;
        \? ) echo $USAGE 
+	    IS_SHOW_COPYRIGHT="F"
             exit 1 
             ;;
     esac
 done
 
+function showCopyright(){
+	echo "*******************************************************************************************"
+	echo "*                                                                                         *"
+	echo "*                                  CKT VERSION RELEAS                                     *"
+	echo "*                                  VERSION beta-v1.0.1                                    *"
+	echo "*                           AUTROR HePeijiang ZhaoDan YaoZhilin                           *"
+	echo "*                (c) Copyright ckt version release 2013.  All rights reserved.            *"
+	echo "*                                                                                         *"
+	echo "*******************************************************************************************" 
+} 
+
+if [ "T" = "$IS_SHOW_COPYRIGHT" ]; then
+	showCopyright;
+fi
+
+if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ]; then
+   fShowMenu;
+   IS_MENU_SHOW="T"
+fi
+
 function tipUserInputLastVersion(){
-	if [ "$IS_MENU_SHOW"="T" ] && [ -z "$LAST_VERSION" ]; then
+	if [ "$IS_MENU_SHOW"="T" ] && [ -z "$OTA_COMPARED_VERSION" ]; then
 		echo -e "\033[49;31;5m You must input the version which you want to compare \033[0m, The version is: \c "
 		read VSN
 		if [ -z "$VSN" ] ;then
 		    tipUserInputLastVersion;
 		else
-		    LAST_VERSION=$VSN
+		    OTA_COMPARED_VERSION=$VSN
 		fi
 	fi
 }
@@ -246,13 +255,13 @@ else
 fi
 
 #get last version package name for make ota differnt split package
-if [ -z "$LAST_VERSION_PACKAGE_NAME" ];then
+if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ];then
 	echo -e "\033[49;31;5m You must input the compare version package name for us to make ota differnt split package, \033[0m The name is: \c "
         read NAME
         if [ -z "$NAME" ] ;then
 	    fShowMenu;
         else
-            LAST_VERSION_PACKAGE_NAME=$NAME
+            OTA_COMPARED_VERSION_PACKAGE_NAME=$NAME
 	fi
 fi
 
@@ -261,10 +270,11 @@ FOLDER_NAME=${FOLDER_NAME_PRE}${VERSION}"_"${TARGET_BUILD_VARIANT}
 echo -e "Please confirm the build information:"
 echo -e "\t Project Name:\033[49;31;5m "${PROJECT_NAME}"\033[0m "
 echo -e "\t Target Build Version:\033[49;31;5m " ${TARGET_BUILD_VARIANT}"\033[0m "
-echo -e "\t Build Version:\033[49;31;5m "${VERSION}"\033[0m "
+echo -e "\t External Version:\033[49;31;5m "${VERSION}"\033[0m "
+echo -e "\t Internal Version:\033[49;31;5m "${INTERNAL_VERSION}"\033[0m "
 echo -e "\t The final package folder name:\033[49;31;5m "${FOLDER_NAME}"\033[0m "
 echo -e "\t Is only make package:\033[49;31;5m "${IS_ONLY_MAKE_PACHAGE}"\033[0m "
-echo -e "\t Last version package name:\033[49;31;5m "${LAST_VERSION_PACKAGE_NAME}"\033[0m "
+echo -e "\t Last version package name:\033[49;31;5m "${OTA_COMPARED_VERSION_PACKAGE_NAME}"\033[0m "
 echo -e "\t it's correctly(y/n): \c "
 
 read confirm
@@ -325,26 +335,26 @@ mkdir $OTA_FOLDER
 mkdir ota_update_file
 
 cd $UPDATE_FOLDER
-mkdir sdcard_ota
-mkdir usb_ota
+mkdir sdcard_update
+mkdir usb_update
 
 #copy sdcard ota
 echo -e "`date '+%Y%m%d  %T'` copy sdcard ota to folder..."
-cd sdcard_ota
+cd sdcard_update
 cp -f $CKT_HOME/out/target/product/$PROJECT_NAME/$PROJECT_NAME-ota-*.zip ./update.zip
 checkCommandExc;
 
 #copy usb ota
 echo -e "`date '+%Y%m%d  %T'` copy usb ota to folder..."
-cd ../usb_ota
-cp -f $CKT_HOME/ckt/.zip ./usb_ota.zip
+cd ../usb_update
+cp -f $CKT_HOME/ckt/.zip ./usb_update.zip
 
 checkCommandExc;
 
-unzip ./usb_ota.zip
+unzip ./usb_update.zip
 mv ./ckt/.bin ${UPDATE_FOLDER}".bin"
 rm -rf ./ckt
-rm -f ./usb_ota.zip
+rm -f ./usb_update.zip
 
 #copy middle ota
 echo -e "`date '+%Y%m%d  %T'` copy midlle ota to folder..."
@@ -355,7 +365,7 @@ checkCommandExc;
 
 #copy modem
 echo -e "`date '+%Y%m%d  %T'` copy modem to folder..."
-cd ../$UPDATE_FOLDER/usb_ota/${UPDATE_FOLDER}".bin"/DATABASE/
+cd ../$UPDATE_FOLDER/usb_update/${UPDATE_FOLDER}".bin"/DATABASE/
 MODEM_DIR_T=`sed -n '/^CUSTOM_MODEM/p' "$PROJECT_CONFIG_FILE"`
 CUSTOM_MODEM=${MODEM_DIR_T#*=}
 
@@ -380,13 +390,13 @@ function getLastVersionPackage(){
         
         local FTP_URL=$FTP_USER_NAME":"$FTP_USER_PASSORD"@"$FTP_ADDR
 
-        echo $FTP_URL
         local TEMP_FOLDER_NAME="Y320U_EMMC/HOAT中间文件/$HWV_PROJECT_NAME/${HWV_PROJECT_NAME}"_"${TARGET_BUILD_VARIANT}";
 
 #lftp $FTP_URL<< EOF
+	
 	#cd $TEMP_FOLDER_NAME;
-        #get $LAST_VERSION_PACKAGE_NAME;
-        #exit;
+        #get $OTA_COMPARED_VERSION_PACKAGE_NAME;
+        #bye;
 	
 #EOF
 }
@@ -394,8 +404,8 @@ function getLastVersionPackage(){
 #getLastVersionPackage
 cd $FINAL_PACKAGE_SAVE_DIR/
 
-if [ -f "$LAST_VERSION_PACKAGE_NAME" ]; then
-	mv $LAST_VERSION_PACKAGE_NAME ./$FOLDER_NAME/ota_update_file
+if [ -f "$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
+	mv $OTA_COMPARED_VERSION_PACKAGE_NAME ./$FOLDER_NAME/ota_update_file
 else
         cd $FOLDER_NAME/ota_update_file
 	getLastVersionPackage;
@@ -415,7 +425,7 @@ function makeUpdateOtaPackageName(){
 	local V_N=`echo $VERSION|tr '[:upper:]' '[:lower:]'` 
         local V=""
 
-        if [ "$LAST_VERSION" = "default" ] || [ "$LAST_VERSION" = "d" ] || [ "$LAST_VERSION" = "dflt" ]; then
+        if [ "$OTA_COMPARED_VERSION" = "default" ] || [ "$OTA_COMPARED_VERSION" = "d" ] || [ "$OTA_COMPARED_VERSION" = "dflt" ]; then
 		local T=`echo $VERSION|tr -cd '[0-9\n]'`
 		local N=`expr $T \- 1`
 		local S=`echo $N|awk '{printf "%03s\n" ,$0}'` #add '0' if length less than 3 at left
@@ -424,8 +434,8 @@ function makeUpdateOtaPackageName(){
 		PREVIOUS_VERSION=${FOLDER_NAME_PRE}${V_T}
 		V=`echo $V_T|tr '[:upper:]' '[:lower:]'`	
 	else
-		PREVIOUS_VERSION=${FOLDER_NAME_PRE}${LAST_VERSION}
-		V=`echo $LAST_VERSION|tr '[:upper:]' '[:lower:]'`
+		PREVIOUS_VERSION=${FOLDER_NAME_PRE}${OTA_COMPARED_VERSION}
+		V=`echo $OTA_COMPARED_VERSION|tr '[:upper:]' '[:lower:]'`
 	fi
         
         UPDATE_OTA_PACKAGE_NAME=${SHORT_PROJECT_NAME}_${V}"--"${V_N}"_"${TARGET_BUILD_VARIANT}".zip"
@@ -439,17 +449,17 @@ OTA_DIFF_FILE_VALIDATE=$FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$UPD
 cd $CKT_HOME
 
 #buil true ota different split package
-./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$LAST_VERSION_PACKAGE_NAME $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $OTA_DIFF_FILE
+./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$OTA_COMPARED_VERSION_PACKAGE_NAME $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $OTA_DIFF_FILE
 checkCommandExc;
 
 echo "+=========================================================================================+"
 echo "+=      `date '+%Y%m%d  %T'` begin to make validate ota different split package...       =+"
 echo "+=========================================================================================+"
 #buil validate ota different split package
-./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i  $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$LAST_VERSION_PACKAGE_NAME $OTA_DIFF_FILE_VALIDATE
+./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i  $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$OTA_COMPARED_VERSION_PACKAGE_NAME $OTA_DIFF_FILE_VALIDATE
 checkCommandExc;
 
-rm -f $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$LAST_VERSION_PACKAGE_NAME
+rm -f $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$OTA_COMPARED_VERSION_PACKAGE_NAME
 
 cd $FINAL_PACKAGE_SAVE_DIR
 
