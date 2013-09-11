@@ -27,7 +27,7 @@ IS_ONLY_MAKE_PACHAGE="n"
 OTA_COMPARED_VERSION_PACKAGE_NAME=""
 
 #user introduction
-USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-z n or y] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-? show_this_message] "
+USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w make_vendor_ota_package] [-? show_this_message] "
 
 #option count
 OPTION_COUNT=$#
