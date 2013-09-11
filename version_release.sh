@@ -382,8 +382,9 @@ function makeUsbUpdate(){
 
 	local CUSTOM_MODEM=`grep -w CUSTOM_MODEM $PROJECT_CONFIG_FILE|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
 	cp -f $CKT_HOME_MTK_MODEM/$CUSTOM_MODEM/BPLGUInfoCustomAppSrcP_* ./
-        cp -f $CKT_HOME_MTK_MODEM/$CUSTOM_MODEM/mediatek/cgen/APDB_MT6572_S01_MAIN2.1_W10.24 ./
+        cp -f $CKT_HOME/mediatek/cgen/APDB_MT6572_S01_MAIN2.1_W10.24 ./
 
+	cd ../../
 }
 
 echo -e "`date '+%Y%m%d  %T'` copy usb ota to folder..."
