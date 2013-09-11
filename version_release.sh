@@ -14,6 +14,9 @@ VERSION=""
 #interior version
 INTERNAL_VERSION=""
 
+#demain is only build
+IS_ONLY_BUILD="F"
+
 #the last version which user want to compare
 OTA_COMPARED_VERSION=""
 
@@ -34,6 +37,12 @@ IS_MENU_SHOW="T"
 
 #demaid the copyright is showing
 IS_SHOW_COPYRIGHT="T"
+
+#demain is make the ota package
+IS_MAKE_OTA_PACKAGE="T"
+
+#demain is make the huawei ota package
+IS_MAKE_HUAWEI_OTA_PACKAGE="F"
 
 function checkCommandExc(){
 	if [ $? -ne 0 ];then
@@ -76,7 +85,7 @@ function fShowMenu(){
 }
 
 #read user input options
-while getopts ":p:t:v:i:z:o:l:x" opt; do
+while getopts ":p:t:v:i:z:o:l:mnwx" opt; do
     case $opt in
         p ) PROJECT_NAME=$OPTARG 
             ;;
@@ -86,11 +95,17 @@ while getopts ":p:t:v:i:z:o:l:x" opt; do
             ;;
         i ) INTERNAL_VERSION=$OPTARG
             ;;
+	\m ) IS_ONLY_BUILD="T" 
+            ;;
         z ) IS_ONLY_MAKE_PACHAGE=$OPTARG 
             ;;
         o ) OTA_COMPARED_VERSION_PACKAGE_NAME=$OPTARG 
             ;;
         l ) OTA_COMPARED_VERSION=$OPTARG 
+            ;;
+       \n ) IS_MAKE_OTA_PACKAGE="F" 
+            ;;
+       \w ) IS_MAKE_HUAWEI_OTA_PACKAGE="T"
             ;;
        \x ) IS_ONLY_MAKE_PACHAGE="y"
             ;;
@@ -116,13 +131,13 @@ if [ "T" = "$IS_SHOW_COPYRIGHT" ]; then
 	showCopyright;
 fi
 
-if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ]; then
+if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ]; then
    fShowMenu;
    IS_MENU_SHOW="T"
 fi
 
 function tipUserInputLastVersion(){
-	if [ "$IS_MENU_SHOW"="T" ] && [ -z "$OTA_COMPARED_VERSION" ]; then
+	if [ "$IS_MENU_SHOW"="T" ] && [ -z "$OTA_COMPARED_VERSION" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T" ] && [ "$IS_ONLY_BUILD" = "F" ]; then
 		echo -e "\033[49;31;5m You must input the version which you want to compare \033[0m, The version is: \c "
 		read VSN
 		if [ -z "$VSN" ] ;then
@@ -255,7 +270,7 @@ else
 fi
 
 #get last version package name for make ota differnt split package
-if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ];then
+if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T" ] && [ "$IS_ONLY_BUILD" = "F" ];then
 	echo -e "\033[49;31;5m You must input the compare version package name for us to make ota differnt split package, \033[0m The name is: \c "
         read NAME
         if [ -z "$NAME" ] ;then
@@ -318,6 +333,11 @@ if [ "$IS_ONLY_MAKE_PACHAGE" = "n" ] ;then
 	fi
 fi
 
+if [ "$IS_ONLY_BUILD" = "T" ]; then
+	echo "Build is completed, there has no more task to do, the tools will exit!"
+        exit
+fi
+
 #make dir
 echo "+=========================================================================================+"
 echo "+=                  `date '+%Y%m%d  %T'` begin make ota package...                       =+"
@@ -373,6 +393,11 @@ cp -f $CKT_HOME_MTK_MODEM/$CUSTOM_MODEM/BPLGUInfoCustomAppSrcP_* ./
 
 checkCommandExc;
 
+if [ "$IS_MAKE_OTA_PACKAGE" = "F" ]; then
+	echo "Package is maked completed, there has no more task to do, the tools will exit!"
+        exit
+fi
+
 #make ota different split package
 echo "+=========================================================================================+"
 echo "+=      `date '+%Y%m%d  %T'` begin to make ota different split package...                =+"
@@ -410,6 +435,10 @@ else
         cd $FOLDER_NAME/ota_update_file
 	getLastVersionPackage;
 	cd -
+fi 
+
+if [ ! -f "$FOLDER_NAME/ota_update_file/$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
+	checkCommandExc;
 fi 
 
 #make update ota package naem
@@ -569,8 +598,6 @@ function makeVendorOtaFile() {
     sed -i "20s/.*/$OTA_DIFF_FILE_SIZE_CONTENT/g" "$FILE_LIST_FILE"
     checkCommandExc;
 
-ls
-
     cd ..
 
     # copy xml file and ota file to  dir
@@ -592,7 +619,14 @@ ls
     echo "packaging the ota file..."
     zip -rm $U_ZIP_NAME updatepackage/
     echo "package finished!"
+    
+    cd -
 }
+
+if [ "$IS_MAKE_HUAWEI_OTA_PACKAGE" = "F" ]; then
+	echo "Ota different split package is maked completed, there has no more task to do, the tools will exit!"
+        exit
+fi
 
 #make vendor ota file
 echo "+=========================================================================================+"
