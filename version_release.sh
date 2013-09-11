@@ -345,9 +345,9 @@ mkdir $FOLDER_NAME
 
 cd $FOLDER_NAME
 UPDATE_FOLDER=$FOLDER_NAME
-OTA_FOLDER=${FOLDER_NAME}"_ota"
+#OTA_FOLDER=${FOLDER_NAME}"_ota"
 mkdir $UPDATE_FOLDER
-mkdir $OTA_FOLDER
+#mkdir $OTA_FOLDER
 mkdir ota_update_file
 
 cd $UPDATE_FOLDER
@@ -393,10 +393,10 @@ makeUsbUpdate;
 checkCommandExc;
 
 #copy middle ota
-echo -e "`date '+%Y%m%d  %T'` copy midlle ota to folder..."
-cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_FOLDER
-cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip ./
-checkCommandExc;
+#echo -e "`date '+%Y%m%d  %T'` copy midlle ota to folder..."
+#cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_FOLDER
+#cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip ./
+#checkCommandExc;
 
 if [ "$IS_MAKE_OTA_PACKAGE" = "F" ]; then
 	echo "Package is maked completed, there has no more task to do, the tools will exit!"
@@ -435,7 +435,7 @@ function getLastVersionPackage(){
 cd $FINAL_PACKAGE_SAVE_DIR/
 
 if [ -f "$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
-	mv $OTA_COMPARED_VERSION_PACKAGE_NAME ./$FOLDER_NAME/ota_update_file
+	cp -f $OTA_COMPARED_VERSION_PACKAGE_NAME ./$FOLDER_NAME/ota_update_file
 else
         cd $FOLDER_NAME/ota_update_file
 	getLastVersionPackage;
@@ -473,7 +473,7 @@ function makeUpdateOtaPackageName(){
 	fi
         
         UPDATE_OTA_PACKAGE_NAME=${SHORT_PROJECT_NAME}_${V}"--"${V_N}"_"${TARGET_BUILD_VARIANT}".zip"
-	UPDATE_OTA_PACKAGE_NAME_VALIDATE=${V_N}"_"${TARGET_BUILD_VARIANT}"--"${SHORT_PROJECT_NAME}_${V}".zip"
+	UPDATE_OTA_PACKAGE_NAME_VALIDATE=${SHORT_PROJECT_NAME}"_"${V_N}"--"${V}"_"${TARGET_BUILD_VARIANT}".zip"
 }
 
 makeUpdateOtaPackageName;
@@ -545,15 +545,15 @@ function makeVendorOtaFile() {
     if [ "$1" = "T" ]; then
         VSN="$FOLDER_NAME_PRE$VERSION"
         FTS="$PREVIOUS_VERSION to ${FOLDER_NAME_PRE}${VERSION}"
-        SPTH="$UPDATE_OTA_PACKAGE_NAME"
-        DPTH="$UPDATE_OTA_PACKAGE_NAME"
+        SPTH="update.zip"
+        DPTH="update.zip"
         ODFL="$OTA_DIFF_FILE"
         U_ZIP_NAME=${PREVIOUS_VERSION}"_"${TARGET_BUILD_VARIANT}"--"${FOLDER_NAME}"-updatepackage.zip"
     else
         VSN="$PREVIOUS_VERSION"
         FTS="${FOLDER_NAME_PRE}${VERSION} to $PREVIOUS_VERSION"
-        SPTH="$UPDATE_OTA_PACKAGE_NAME_VALIDATE"
-        DPTH="$UPDATE_OTA_PACKAGE_NAME_VALIDATE"
+        SPTH="update.zip"
+        DPTH="update.zip"
         ODFL="$OTA_DIFF_FILE_VALIDATE"
         U_ZIP_NAME=${FOLDER_NAME}"--"${PREVIOUS_VERSION}"_"${TARGET_BUILD_VARIANT}"-updatepackage.zip"
     fi
