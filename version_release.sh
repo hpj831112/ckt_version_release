@@ -355,7 +355,7 @@ mkdir sdcard_update
 mkdir usb_update
 
 #copy sdcard ota
-echo -e "`date '+%Y%m%d  %T'` copy sdcard ota to folder..."
+echo -e "`date '+%Y%m%d  %T'` copy sdcard update to folder..."
 cd sdcard_update
 cp -f $CKT_HOME/out/target/product/$PROJECT_NAME/$PROJECT_NAME-ota-*.zip ./update.zip
 checkCommandExc;
@@ -363,39 +363,38 @@ checkCommandExc;
 #copy usb ota
 function makeUsbUpdate(){
 	mkdir ${FOLDER_NAME}".bin"
+
 	cd ${FOLDER_NAME}".bin"
-	local BIN_SOURCE="$CKT_HOME_OUT_PROJECT/EBR1 \
-			$CKT_HOME_OUT_PROJECT/boot.img \
-			$CKT_HOME_OUT_PROJECT/recovery.img \
-			$CKT_HOME_OUT_PROJECT/MT6572_Android_scatter.txt \
-			$CKT_HOME_OUT_PROJECT/lk.bin \
-			$CKT_HOME_OUT_PROJECT/preloader_ckt72_we_jb3.bin \
-			$CKT_HOME_OUT_PROJECT/userdata.img \
-			$CKT_HOME_OUT_PROJECT/secro.img \
-			$CKT_HOME_OUT_PROJECT/MBR \
-			$CKT_HOME_OUT_PROJECT/system.img \
-			$CKT_HOME_OUT_PROJECT/cache.img \
-			$CKT_HOME_OUT_PROJECT/logo.bin"
-	cp -f $BIN_SOURCE ./
+	cp -rf $CKT_HOME_OUT_PROJECT/EBR1 ./
+	cp -rf $CKT_HOME_OUT_PROJECT/boot.img ./
+	cp -rf $CKT_HOME_OUT_PROJECT/recovery.img ./
+	cp -rf $CKT_HOME_OUT_PROJECT/MT6572_Android_scatter.txt ./
+	cp -rf $CKT_HOME_OUT_PROJECT/lk.bin ./
+	cp -rf $CKT_HOME_OUT_PROJECT/preloader_ckt72_we_jb3.bin ./
+	cp -rf $CKT_HOME_OUT_PROJECT/userdata.img ./
+	cp -rf $CKT_HOME_OUT_PROJECT/secro.img ./
+	cp -rf $CKT_HOME_OUT_PROJECT/MBR ./
+	cp -rf $CKT_HOME_OUT_PROJECT/system.img ./
+	cp -rf $CKT_HOME_OUT_PROJECT/cache.img ./
+	cp -rf $CKT_HOME_OUT_PROJECT/logo.bin ./
+
 	mkdir DATABASE
 	cd DATABASE
-
-	local CUSTOM_MODEM=`grep -w CUSTOM_MODEM $PROJECT_CONFIG_FILE|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+	local CUSTOM_MODEM=`grep -w ^CUSTOM_MODEM $PROJECT_CONFIG_FILE|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
 	cp -f $CKT_HOME_MTK_MODEM/$CUSTOM_MODEM/BPLGUInfoCustomAppSrcP_* ./
         cp -f $CKT_HOME/mediatek/cgen/APDB_MT6572_S01_MAIN2.1_W10.24 ./
 
 	cd ../../
 }
 
-echo -e "`date '+%Y%m%d  %T'` copy usb ota to folder..."
-cd ../usb_update
-
+echo -e "`date '+%Y%m%d  %T'` make usb update to folder..."
+cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$UPDATE_FOLDER/usb_update
 makeUsbUpdate;
 checkCommandExc;
 
 #copy middle ota
 echo -e "`date '+%Y%m%d  %T'` copy midlle ota to folder..."
-cd ../../$OTA_FOLDER
+cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_FOLDER
 cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip ./
 checkCommandExc;
 
