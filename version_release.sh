@@ -91,9 +91,9 @@ while getopts ":p:t:v:i:z:o:l:mnwx" opt; do
             ;;
         t ) TARGET_BUILD_VARIANT=$OPTARG 
             ;;
-        v ) VERSION=$OPTARG 
+        v ) VERSION=`echo $OPTARG|tr '[:lower:]' '[:upper:]'` 
             ;;
-        i ) INTERNAL_VERSION=$OPTARG
+        i ) INTERNAL_VERSION=`echo $OPTARG|tr '[:lower:]' '[:upper:]'` 
             ;;
        \m ) IS_ONLY_BUILD="T" 
             ;;
@@ -101,7 +101,7 @@ while getopts ":p:t:v:i:z:o:l:mnwx" opt; do
             ;;
         o ) OTA_COMPARED_VERSION_PACKAGE_NAME=$OPTARG 
             ;;
-        l ) OTA_COMPARED_VERSION=$OPTARG 
+        l ) OTA_COMPARED_VERSION=`echo $OPTARG|tr '[:lower:]' '[:upper:]'`  
             ;;
        \n ) IS_MAKE_OTA_PACKAGE="F" 
             ;;
@@ -143,7 +143,7 @@ function tipUserInputLastVersion(){
 		if [ -z "$VSN" ] ;then
 		    tipUserInputLastVersion;
 		else
-		    OTA_COMPARED_VERSION=$VSN
+		    OTA_COMPARED_VERSION=`echo $VSN|tr '[:lower:]' '[:upper:]'`
 		fi
 	fi
 }
@@ -171,6 +171,8 @@ if [ ! -d "$FINAL_PACKAGE_SAVE_DIR" ]; then
 	mkdir -p "$FINAL_PACKAGE_SAVE_DIR" 
 fi 
 
+VENDOR_T=`sed -n '/^VENDOR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+VENDOR=${VENDOR_T#*=}
 
 #get version param
 FOLDER_NAME_PRE=""
@@ -223,7 +225,7 @@ if [ -z "$VERSION" ];then
 
 	#make folder name add set build version in project config file
 	read BUILD_VERSION
-	VERSION=$BUILD_VERSION
+	VERSION=`echo $BUILD_VERSION|tr '[:lower:]' '[:upper:]'`
 
 	if [ -z "$BUILD_VERSION" ] ;then
 	    VERSION=$HWV_BUILD_VERSION
@@ -250,7 +252,7 @@ if [ -z "$INTERNAL_VERSION" ];then
 
 	#make folder name add set build version in project config file
 	read INTERNAL_VERSION_T
-	INTERNAL_VERSION=$INTERNAL_VERSION_T
+	INTERNAL_VERSION=`echo $INTERNAL_VERSION_T|tr '[:lower:]' '[:upper:]'`
 
 	if [ -z "$INTERNAL_VERSION" ] ;then
 	    INTERNAL_VERSION=$HWV_BUILDINTERNAL_VERSION
@@ -329,26 +331,28 @@ if [ "$IS_ONLY_MAKE_PACHAGE" = "n" ] ;then
 	fi
 fi
 
-if [ "$IS_ONLY_BUILD" = "T" ]; then
+if [ "$IS_ONLY_BUILD" = "T" ]  && [ "$IS_MAKE_OTA_PACKAGE" = "T" ]; then
 	echo "Build is completed, there has no more task to do, the tools will exit!"
         exit
 fi
 
 #make dir
 echo "+=========================================================================================+"
-echo "+=                  `date '+%Y%m%d  %T'` begin make ota package...                       =+"
+echo "+=                  `date '+%Y%m%d  %T'` begin make version release folder...                       =+"
 echo "+=========================================================================================+"
 
 cd $FINAL_PACKAGE_SAVE_DIR
 rm -rf $FOLDER_NAME
 mkdir $FOLDER_NAME
 
+FTP_BACKUP_DIR=`echo ${VERSION}"_"${TARGET_BUILD_VARIANT}"_ftp_backup"|tr '[:upper:]' '[:lower:]'`
+rm -rf $FTP_BACKUP_DIR
+mkdir $FTP_BACKUP_DIR
+
 cd $FOLDER_NAME
 UPDATE_FOLDER=$FOLDER_NAME
 #OTA_FOLDER=${FOLDER_NAME}"_ota"
 mkdir $UPDATE_FOLDER
-#mkdir $OTA_FOLDER
-mkdir ota_update_file
 
 cd $UPDATE_FOLDER
 mkdir sdcard_update
@@ -434,15 +438,18 @@ function getLastVersionPackage(){
 #getLastVersionPackage
 cd $FINAL_PACKAGE_SAVE_DIR/
 
+OTA_UPDATE_DIR=`echo ${VERSION}"_"${TARGET_BUILD_VARIANT}"_"${VENDOR}"_ota_update"|tr '[:upper:]' '[:lower:]'`
+mkdir -p ./$FOLDER_NAME/$OTA_UPDATE_DIR
+
 if [ -f "$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
-	cp -f $OTA_COMPARED_VERSION_PACKAGE_NAME ./$FOLDER_NAME/ota_update_file
+	cp -f $OTA_COMPARED_VERSION_PACKAGE_NAME ./$FOLDER_NAME/$OTA_UPDATE_DIR
 else
-        cd $FOLDER_NAME/ota_update_file
+        cd $FOLDER_NAME/$OTA_UPDATE_DIR
 	getLastVersionPackage;
 	cd -
 fi 
 
-if [ ! -f "$FOLDER_NAME/ota_update_file/$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
+if [ ! -f "$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
 	checkCommandExc;
 fi 
 
@@ -477,30 +484,29 @@ function makeUpdateOtaPackageName(){
 }
 
 makeUpdateOtaPackageName;
-OTA_DIFF_FILE=$FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$UPDATE_OTA_PACKAGE_NAME
-OTA_DIFF_FILE_VALIDATE=$FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$UPDATE_OTA_PACKAGE_NAME_VALIDATE
+OTA_DIFF_FILE=$FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$UPDATE_OTA_PACKAGE_NAME
+OTA_DIFF_FILE_VALIDATE=$FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$UPDATE_OTA_PACKAGE_NAME_VALIDATE
 
 cd $CKT_HOME
 
 #buil true ota different split package
-./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$OTA_COMPARED_VERSION_PACKAGE_NAME $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $OTA_DIFF_FILE
+./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $OTA_DIFF_FILE
 checkCommandExc;
 
 echo "+=========================================================================================+"
 echo "+=      `date '+%Y%m%d  %T'` begin to make validate ota different split package...       =+"
 echo "+=========================================================================================+"
 #buil validate ota different split package
-./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i  $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$OTA_COMPARED_VERSION_PACKAGE_NAME $OTA_DIFF_FILE_VALIDATE
+./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i  $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME $OTA_DIFF_FILE_VALIDATE
 checkCommandExc;
 
-rm -f $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/ota_update_file/$OTA_COMPARED_VERSION_PACKAGE_NAME
+rm -f $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME
 
 cd $FINAL_PACKAGE_SAVE_DIR
 
-cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/${SHORT_PROJECT_NAME}"_"${VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
+cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/${SHORT_PROJECT_NAME}"_"${VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
 checkCommandExc;
 
-VENDOR=""
 OTA_UPDATE_COMPONENT_NAME=""
 FULL_DIR=""
 OTA_CONFIG_DIR=""
@@ -509,8 +515,6 @@ CHANAGE_LOG_FILE=""
 FILE_LIST_FILE=""
 
 function readVendorOtaConfig(){
-    local VENDOR_T=`sed -n '/^VENDOR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-    VENDOR=${VENDOR_T#*=}
 
     local OTA_UPDATE_COMPONENT_NAME_T=`sed -n '/^OTA_UPDATE_COMPONENT_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
     OTA_UPDATE_COMPONENT_NAME=${OTA_UPDATE_COMPONENT_NAME_T#*=}
@@ -533,7 +537,7 @@ function readVendorOtaConfig(){
 
 #  add for make vendor ota file
 function makeVendorOtaFile() {
-    cd $FOLDER_NAME/ota_update_file
+    cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR
 
     VSN=""
     FTS=""
@@ -558,13 +562,11 @@ function makeVendorOtaFile() {
         U_ZIP_NAME=${FOLDER_NAME}"--"${PREVIOUS_VERSION}"_"${TARGET_BUILD_VARIANT}"-updatepackage.zip"
     fi
 
-    cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/$UPDATE_PACKAGE_DIR ./
+    cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/$UPDATE_PACKAGE_DIR/$OTA_CONFIG_DIR ./
     checkCommandExc;
-
-    cd $UPDATE_PACKAGE_DIR
+    
+    rm -rf $FULL_DIR
     mkdir $FULL_DIR
-
-
 
     cd $OTA_CONFIG_DIR
     local VERSION_CONTENT="<component name=\"$OTA_UPDATE_COMPONENT_NAME\" version=\"${VSN}\"\/\>"
@@ -603,7 +605,7 @@ function makeVendorOtaFile() {
     sed -i "20s/.*/$OTA_DIFF_FILE_SIZE_CONTENT/g" "$FILE_LIST_FILE"
     checkCommandExc;
 
-    cd ..
+    cd -
 
     # copy xml file and ota file to  dir
     echo "copying $CHANAGE_LOG_FILE $FILE_LIST_FILE and $ODFL to $FULL_DIR"
@@ -614,15 +616,14 @@ function makeVendorOtaFile() {
     checkCommandExc;
 
     cp $ODFL $FULL_DIR/update.zip 
-    rm -f $ODFL
+    mv -f $ODFL $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR
     checkCommandExc;
 
     rm -rf $OTA_CONFIG_DIR
-    cd .. 
 
     # package the ota file
     echo "packaging the ota file..."
-    zip -rm $U_ZIP_NAME updatepackage/
+    zip -rm $U_ZIP_NAME $FULL_DIR/
     echo "package finished!"
     
     cd -
