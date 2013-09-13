@@ -510,6 +510,7 @@ cd $FINAL_PACKAGE_SAVE_DIR
 cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/${SHORT_PROJECT_NAME}"_"${VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
 checkCommandExc;
 
+HUAWEI_OTA_PACKAGE_NAME=""
 OTA_UPDATE_COMPONENT_NAME=""
 FULL_DIR=""
 OTA_CONFIG_DIR=""
@@ -518,6 +519,8 @@ CHANAGE_LOG_FILE=""
 FILE_LIST_FILE=""
 
 function readVendorOtaConfig(){
+    local HUAWEI_OTA_PACKAGE_NAME_T=`sed -n '/^HUAWEI_OTA_PACKAGE_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    HUAWEI_OTA_PACKAGE_NAME=${HUAWEI_OTA_PACKAGE_NAME_T#*=}
 
     local OTA_UPDATE_COMPONENT_NAME_T=`sed -n '/^OTA_UPDATE_COMPONENT_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
     OTA_UPDATE_COMPONENT_NAME=${OTA_UPDATE_COMPONENT_NAME_T#*=}
@@ -565,6 +568,8 @@ function makeVendorOtaFile() {
         U_ZIP_NAME=${FOLDER_NAME}"--"${PREVIOUS_VERSION}"_"${TARGET_BUILD_VARIANT}"-updatepackage.zip"
     fi
 
+    mv $ODFL $HUAWEI_OTA_PACKAGE_NAME
+
     cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/$UPDATE_PACKAGE_DIR/$OTA_CONFIG_DIR ./
     checkCommandExc;
     
@@ -600,8 +605,8 @@ function makeVendorOtaFile() {
     sed -i "17s/.*/$DPATH/g" "$FILE_LIST_FILE"
     checkCommandExc;
 
-    local OTA_DIFF_MD5_CONTENT="\<md5\>`md5sum $ODFL | cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`\<\/md5\>"
-    local OTA_DIFF_FILE_SIZE_CONTENT="\<size\>`ls -la $ODFL | cut -d' ' -f5`\<\/size\>"
+    local OTA_DIFF_MD5_CONTENT="\<md5\>`md5sum $HUAWEI_OTA_PACKAGE_NAME | cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`\<\/md5\>"
+    local OTA_DIFF_FILE_SIZE_CONTENT="\<size\>`ls -la $HUAWEI_OTA_PACKAGE_NAME | cut -d' ' -f5`\<\/size\>"
     sed -i "19s/.*/$OTA_DIFF_MD5_CONTENT/g" "$FILE_LIST_FILE"
     checkCommandExc;
 
@@ -611,15 +616,15 @@ function makeVendorOtaFile() {
     cd -
 
     # copy xml file and ota file to  dir
-    echo "copying $CHANAGE_LOG_FILE $FILE_LIST_FILE and $ODFL to $FULL_DIR"
+    echo "copying $CHANAGE_LOG_FILE $FILE_LIST_FILE and $HUAWEI_OTA_PACKAGE_NAME to $FULL_DIR"
     cp $OTA_CONFIG_DIR/$CHANAGE_LOG_FILE $FULL_DIR/
     checkCommandExc;
 
     cp $OTA_CONFIG_DIR/$FILE_LIST_FILE $FULL_DIR/
     checkCommandExc;
 
-    cp $ODFL $FULL_DIR/update.zip 
-    mv -f $ODFL $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR
+    cp $HUAWEI_OTA_PACKAGE_NAME $FULL_DIR/update.zip 
+    mv -f $HUAWEI_OTA_PACKAGE_NAME $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR
     checkCommandExc;
 
     rm -rf $OTA_CONFIG_DIR
