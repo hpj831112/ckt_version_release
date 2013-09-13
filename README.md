@@ -33,7 +33,7 @@ ckt_version_release
 	   -t: 目标版本，如：user/eng
 	   -v: 外部版本，如：B211
 	   -i：内部版本，如：B212
-	   -m：只编译版本参数，如：ckt_release -m，这样的话，工具仅会编译当前版本而不会做任何其他的事情
+	   -m：编译版本参数，如：ckt_release -m，这样的话，工具仅会编译当前版本而不会做任何其他的事情
 	   -z：功能如[-x]，不过此时需要完整参数
 	   -o: 做差分包需要的以前版本的OTA中间文件文件zip包，如：u10_b211_user.zip。
 	   -l：做差分包需要的以前版本的OTA中间文件文件的版本号。如：u10_b211_user.zip的版本号为B211，为[default/d/dflt]时系统会默认与当前版本的前一个版本做差分，不为default时，必须输入上一个版本的版本号，如：B211，否则结果可能与你想象的不同
@@ -50,7 +50,7 @@ ckt_version_release
 	3、使用本工具打包且不做差分包
 	   ckt_release -x -n
 	4、使用本工具完成编译以外的全部版本发布工作
-	    ckt_release -x -l d -o u10_b211_user.zip -l B211 -w
+	    ckt_release -x -l d -o u10_b211_user.zip -w
 	5、使用本工具编译版本并当前版本的前一版本对比生成差分包
 	   命令：ckt_release -l d
 	   之后根据提示输入相应的信息则可以完成整套流程

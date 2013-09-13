@@ -301,7 +301,10 @@ fi
 
 function cleanDust(){
         echo -e "`date '+%Y%m%d  %T'` Begin to clean last release version's dust......!"
-	${CKT_HOME}/mk clean
+	if [ -d "$CKT_HOME/out" ]; then 
+		${CKT_HOME}/mk clean
+        fi 
+	
 	rm -rf $CKT_HOME/out
 	rm -rf $CKT_HOME/ckt/*.zip
         rm -rf $CKT_HOME/ckt/.bin
