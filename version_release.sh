@@ -136,19 +136,6 @@ if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-
    IS_MENU_SHOW="T"
 fi
 
-function tipUserInputLastVersion(){
-	if [ "$IS_MENU_SHOW"="T" ] && [ -z "$OTA_COMPARED_VERSION" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T" ] && [ "$IS_ONLY_BUILD" = "F" ]; then
-		echo -e "\033[49;31;5m You must input the version which you want to compare \033[0m, The version is: \c "
-		read VSN
-		if [ -z "$VSN" ] ;then
-		    tipUserInputLastVersion;
-		else
-		    OTA_COMPARED_VERSION=`echo $VSN|tr '[:lower:]' '[:upper:]'`
-		fi
-	fi
-}
-tipUserInputLastVersion;
-
 #defind global vars
 CKT_HOME=`pwd`
 CKT_HOME_OUT_PROJECT=${CKT_HOME}"/out/target/product/$PROJECT_NAME"
@@ -220,11 +207,10 @@ getVersionParam;
 #modify external version
 if [ -z "$VERSION" ];then
 	#defind target build version
-	echo -e "Current external version is: \033[49;31;5m $HWV_BUILD_VERSION \033[0m would you like to build this version?"
-        echo -e "If is please click Enter to continue, else please input your external version: \c "
+	echo -e "\033[49;36;5m "
+	read -e -p "Enter The External Version:" -i "$HWV_BUILD_VERSION" BUILD_VERSION
+	echo -e "\033[0m"
 
-	#make folder name add set build version in project config file
-	read BUILD_VERSION
 	VERSION=`echo $BUILD_VERSION|tr '[:lower:]' '[:upper:]'`
 
 	if [ -z "$BUILD_VERSION" ] ;then
@@ -247,11 +233,10 @@ fi
 #modify internal version
 if [ -z "$INTERNAL_VERSION" ];then
 	#defind target build version
-	echo -e "\n Current internal version is: \033[49;31;5m $HWV_BUILDINTERNAL_VERSION \033[0m would you like to build this internal version?"
-        echo -e "If is please click Enter to continue, else please input your internal version: \c "
+	echo -e "\033[49;36;5m "
+	read -e -p "Enter The Internal Version:" -i "$HWV_BUILDINTERNAL_VERSION" INTERNAL_VERSION_T
+	echo -e "\033[0m"
 
-	#make folder name add set build version in project config file
-	read INTERNAL_VERSION_T
 	INTERNAL_VERSION=`echo $INTERNAL_VERSION_T|tr '[:lower:]' '[:upper:]'`
 
 	if [ -z "$INTERNAL_VERSION" ] ;then
@@ -271,10 +256,45 @@ else
    fi
 fi
 
+function getLastVersion(){
+	local T=`echo $VERSION|tr -cd '[0-9\n]'`
+	local N=`expr $T \- 1`
+	local S=`echo $N|awk '{printf "%03s\n" ,$0}'` #add '0' if length less than 3 at left
+	local V_T=${VERSION/$T/$S}
+	
+	echo $V_T
+}
+
+function tipUserInputLastVersion(){
+	if [ "$IS_MENU_SHOW"="T" ] && [ -z "$OTA_COMPARED_VERSION" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T" ] && [ "$IS_ONLY_BUILD" = "F" ]; then
+		local V_T=`getLastVersion`
+		
+		echo -e "\033[49;36;5m "
+		read -e -p "Enter The Compared Version(For Us To Make Ota Different Package):" -i "$V_T" VSN
+		echo -e "\033[0m"
+
+		if [ -z "$VSN" ] ;then
+		    tipUserInputLastVersion;
+		else
+		    OTA_COMPARED_VERSION=`echo $VSN|tr '[:lower:]' '[:upper:]'`
+		fi
+	fi
+}
+tipUserInputLastVersion;
+
+SHORT_PROJECT_NAME=""
+
 #get last version package name for make ota differnt split package
 if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T" ] && [ "$IS_ONLY_BUILD" = "F" ];then
-	echo -e "\033[49;31;5m You must input the compare version package name for us to make ota differnt split package, \033[0m The name is: \c "
-        read NAME
+	SHORT_PROJECT_NAME_T=${HWV_PROJECT_NAME#*-}
+	SHORT_PROJECT_NAME=`echo $SHORT_PROJECT_NAME_T|tr '[:upper:]' '[:lower:]'`
+
+	V_T=`getLastVersion|tr '[:upper:]' '[:lower:]'`
+
+	echo -e "\033[49;36;5m "
+	read -e -p "Enter The Compare Version's package name(For Us To Make Ota Different Package):" -i "${SHORT_PROJECT_NAME}_${V_T}"_"${TARGET_BUILD_VARIANT}.zip" NAME
+	echo -e "\033[0m"
+
         if [ -z "$NAME" ] ;then
 	    fShowMenu;
         else
@@ -459,7 +479,6 @@ fi
 #make update ota package naem
 UPDATE_OTA_PACKAGE_NAME=""
 UPDATE_OTA_PACKAGE_NAME_VALIDATE=""
-SHORT_PROJECT_NAME=""
 PREVIOUS_VERSION=""
 function makeUpdateOtaPackageName(){
 	#make short project name
