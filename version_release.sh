@@ -209,7 +209,7 @@ if [ -z "$VERSION" ];then
 	#defind target build version
 	echo -e "\033[49;36;5m "
 	read -e -p "Enter The External Version:" -i "$HWV_BUILD_VERSION" BUILD_VERSION
-	echo -e "\033[0m"
+	echo -e "\033[0m \c"
 
 	VERSION=`echo $BUILD_VERSION|tr '[:lower:]' '[:upper:]'`
 
@@ -235,7 +235,7 @@ if [ -z "$INTERNAL_VERSION" ];then
 	#defind target build version
 	echo -e "\033[49;36;5m "
 	read -e -p "Enter The Internal Version:" -i "$HWV_BUILDINTERNAL_VERSION" INTERNAL_VERSION_T
-	echo -e "\033[0m"
+	echo -e "\033[0m \c"
 
 	INTERNAL_VERSION=`echo $INTERNAL_VERSION_T|tr '[:lower:]' '[:upper:]'`
 
@@ -271,7 +271,7 @@ function tipUserInputLastVersion(){
 		
 		echo -e "\033[49;36;5m "
 		read -e -p "Enter The Compared Version(For Us To Make Ota Different Package):" -i "$V_T" VSN
-		echo -e "\033[0m"
+		echo -e "\033[0m \c"
 
 		if [ -z "$VSN" ] ;then
 		    tipUserInputLastVersion;
@@ -292,7 +292,7 @@ if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T"
 	V_T=`getLastVersion|tr '[:upper:]' '[:lower:]'`
 
 	echo -e "\033[49;36;5m "
-	read -e -p "Enter The Compare Version's package name(For Us To Make Ota Different Package):" -i "${SHORT_PROJECT_NAME}_${V_T}"_"${TARGET_BUILD_VARIANT}.zip" NAME
+	read -e -p "Enter The Compare Version's Package Name(For Us To Make Ota Different Package):" -i "${SHORT_PROJECT_NAME}_${V_T}"_"${TARGET_BUILD_VARIANT}.zip" NAME
 	echo -e "\033[0m"
 
         if [ -z "$NAME" ] ;then
@@ -374,20 +374,19 @@ mkdir $FTP_BACKUP_DIR
 
 cd $FOLDER_NAME
 UPDATE_FOLDER=$FOLDER_NAME
-#OTA_FOLDER=${FOLDER_NAME}"_ota"
 mkdir $UPDATE_FOLDER
 
 cd $UPDATE_FOLDER
 mkdir sdcard_update
 mkdir usb_update
 
-#copy sdcard ota
+#copy sdcard update
 echo -e "`date '+%Y%m%d  %T'` copy sdcard update to folder..."
 cd sdcard_update
 cp -f $CKT_HOME/out/target/product/$PROJECT_NAME/$PROJECT_NAME-ota-*.zip ./update.zip
 checkCommandExc;
 
-#copy usb ota
+#copy usb update
 function makeUsbUpdate(){
 	mkdir ${FOLDER_NAME}".bin"
 
@@ -418,12 +417,6 @@ echo -e "`date '+%Y%m%d  %T'` make usb update to folder..."
 cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$UPDATE_FOLDER/usb_update
 makeUsbUpdate;
 checkCommandExc;
-
-#copy middle ota
-#echo -e "`date '+%Y%m%d  %T'` copy midlle ota to folder..."
-#cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_FOLDER
-#cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip ./
-#checkCommandExc;
 
 if [ "$IS_MAKE_OTA_PACKAGE" = "F" ]; then
 	echo "Package is maked completed, there has no more task to do, the tools will exit!"
@@ -564,25 +557,25 @@ function readVendorOtaConfig(){
 function makeVendorOtaFile() {
     cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR
 
-    VSN=""
-    FTS=""
-    SPTH=""
-    DPTH=""
-    ODFL=""
-    U_ZIP_NAME=""
+    local VSN=""
+    local FTS=""
+    local SPTH=""
+    local DPTH=""
+    local ODFL=""
+    local U_ZIP_NAME=""
 
     if [ "$1" = "T" ]; then
         VSN="$FOLDER_NAME_PRE$VERSION"
         FTS="$PREVIOUS_VERSION to ${FOLDER_NAME_PRE}${VERSION}"
-        SPTH="update.zip"
-        DPTH="update.zip"
+        SPTH="$HUAWEI_OTA_PACKAGE_NAME"
+        DPTH="$HUAWEI_OTA_PACKAGE_NAME"
         ODFL="$OTA_DIFF_FILE"
         U_ZIP_NAME=${PREVIOUS_VERSION}"_"${TARGET_BUILD_VARIANT}"--"${FOLDER_NAME}"-updatepackage.zip"
     else
         VSN="$PREVIOUS_VERSION"
         FTS="${FOLDER_NAME_PRE}${VERSION} to $PREVIOUS_VERSION"
-        SPTH="update.zip"
-        DPTH="update.zip"
+        SPTH="$HUAWEI_OTA_PACKAGE_NAME"
+        DPTH="$HUAWEI_OTA_PACKAGE_NAME"
         ODFL="$OTA_DIFF_FILE_VALIDATE"
         U_ZIP_NAME=${FOLDER_NAME}"--"${PREVIOUS_VERSION}"_"${TARGET_BUILD_VARIANT}"-updatepackage.zip"
     fi
@@ -624,8 +617,8 @@ function makeVendorOtaFile() {
     sed -i "17s/.*/$DPATH/g" "$FILE_LIST_FILE"
     checkCommandExc;
 
-    local OTA_DIFF_MD5_CONTENT="\<md5\>`md5sum $HUAWEI_OTA_PACKAGE_NAME | cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`\<\/md5\>"
-    local OTA_DIFF_FILE_SIZE_CONTENT="\<size\>`ls -la $HUAWEI_OTA_PACKAGE_NAME | cut -d' ' -f5`\<\/size\>"
+    local OTA_DIFF_MD5_CONTENT="\<md5\>`md5sum $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$HUAWEI_OTA_PACKAGE_NAME | cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`\<\/md5\>"
+    local OTA_DIFF_FILE_SIZE_CONTENT="\<size\>`ls -la $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$HUAWEI_OTA_PACKAGE_NAME | cut -d' ' -f5`\<\/size\>"
     sed -i "19s/.*/$OTA_DIFF_MD5_CONTENT/g" "$FILE_LIST_FILE"
     checkCommandExc;
 
@@ -642,7 +635,7 @@ function makeVendorOtaFile() {
     cp $OTA_CONFIG_DIR/$FILE_LIST_FILE $FULL_DIR/
     checkCommandExc;
 
-    cp $HUAWEI_OTA_PACKAGE_NAME $FULL_DIR/update.zip 
+    cp -f $HUAWEI_OTA_PACKAGE_NAME $FULL_DIR/
     mv -f $HUAWEI_OTA_PACKAGE_NAME $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR
     checkCommandExc;
 
