@@ -207,7 +207,7 @@ getVersionParam;
 #modify external version
 if [ -z "$VERSION" ];then
 	#defind target build version
-	echo -e "\033[49;36;5m "
+	echo -e "\033[49;36;1m"
 	read -e -p "Enter The External Version:" -i "$HWV_BUILD_VERSION" BUILD_VERSION
 	echo -e "\033[0m \c"
 
@@ -233,7 +233,7 @@ fi
 #modify internal version
 if [ -z "$INTERNAL_VERSION" ];then
 	#defind target build version
-	echo -e "\033[49;36;5m "
+	echo -e "\033[49;36;1m"
 	read -e -p "Enter The Internal Version:" -i "$HWV_BUILDINTERNAL_VERSION" INTERNAL_VERSION_T
 	echo -e "\033[0m \c"
 
@@ -269,7 +269,7 @@ function tipUserInputLastVersion(){
 	if [ "$IS_MENU_SHOW"="T" ] && [ -z "$OTA_COMPARED_VERSION" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T" ] && [ "$IS_ONLY_BUILD" = "F" ]; then
 		local V_T=`getLastVersion`
 		
-		echo -e "\033[49;36;5m "
+		echo -e "\033[49;36;1m"
 		read -e -p "Enter The Compared Version(For Us To Make Ota Different Package):" -i "$V_T" VSN
 		echo -e "\033[0m \c"
 
@@ -291,7 +291,7 @@ if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T"
 
 	V_T=`getLastVersion|tr '[:upper:]' '[:lower:]'`
 
-	echo -e "\033[49;36;5m "
+	echo -e "\033[49;36;1m"
 	read -e -p "Enter The Compare Version's Package Name(For Us To Make Ota Different Package):" -i "${SHORT_PROJECT_NAME}_${V_T}"_"${TARGET_BUILD_VARIANT}.zip" NAME
 	echo -e "\033[0m"
 
@@ -315,7 +315,7 @@ echo -e "\t Last version package name:\033[49;31;5m "${OTA_COMPARED_VERSION_PACK
 echo -e "\t it's correctly(y/n): \c "
 
 read confirm
-if [ "$confirm" = 'n' ] ;then
+if [ ! "$confirm" = 'y' ] ;then
   exit
 fi
 
