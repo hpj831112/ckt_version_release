@@ -131,7 +131,7 @@ if [ "T" = "$IS_SHOW_COPYRIGHT" ]; then
 	showCopyright;
 fi
 
-if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ]; then
+if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-w" ]; then
    fShowMenu;
    IS_MENU_SHOW="T"
 fi
@@ -580,7 +580,7 @@ function makeVendorOtaFile() {
         U_ZIP_NAME=${FOLDER_NAME}"--"${PREVIOUS_VERSION}"_"${TARGET_BUILD_VARIANT}"-updatepackage.zip"
     fi
 
-    mv $ODFL $HUAWEI_OTA_PACKAGE_NAME
+    cp -f $ODFL $HUAWEI_OTA_PACKAGE_NAME
 
     cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/$UPDATE_PACKAGE_DIR/$OTA_CONFIG_DIR ./
     checkCommandExc;
@@ -636,7 +636,11 @@ function makeVendorOtaFile() {
     checkCommandExc;
 
     cp -f $HUAWEI_OTA_PACKAGE_NAME $FULL_DIR/
-    mv -f $HUAWEI_OTA_PACKAGE_NAME $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR
+    checkCommandExc;
+
+    rm -f $HUAWEI_OTA_PACKAGE_NAME
+
+    mv -f $ODFL $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/
     checkCommandExc;
 
     rm -rf $OTA_CONFIG_DIR
