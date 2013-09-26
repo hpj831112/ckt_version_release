@@ -136,7 +136,7 @@ if [ "T" = "$IS_SHOW_COPYRIGHT" ]; then
 	showCopyright;
 fi
 
-if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-w" ]; then
+if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ]; then
    fShowMenu;
    IS_MENU_SHOW="T"
 fi
