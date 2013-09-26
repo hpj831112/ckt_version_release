@@ -47,6 +47,9 @@ IS_MAKE_HUAWEI_OTA_PACKAGE="T"
 #demain need change dir name for chinese
 NEED_CHANGE_DIR_NAME="F"
 
+#log info
+LOG=""
+
 function checkCommandExc(){
 	if [ $? -ne 0 ];then
 	  echo -e "\033[49;31;5m There has some errors during the command executing, please check it! The program will exit! \033[0m EXIT"
@@ -262,12 +265,16 @@ else
 fi
 
 function getLastVersion(){
-	local T=`echo $VERSION|tr -cd '[0-9\n]'`
-	local N=`expr $T \- 1`
-	local S=`echo $N|awk '{printf "%03s\n" ,$0}'` #add '0' if length less than 3 at left
-	local V_T=${VERSION/$T/$S}
+	if [ -z "$OTA_COMPARED_VERSION" ]; then
+		local T=`echo $VERSION|tr -cd '[0-9\n]'`
+		local N=`expr $T \- 1`
+		local S=`echo $N|awk '{printf "%03s\n" ,$0}'` #add '0' if length less than 3 at left
+		local V_T=${VERSION/$T/$S}
 	
-	echo $V_T
+		echo $V_T
+	else
+		echo $OTA_COMPARED_VERSION
+	fi
 }
 
 function tipUserInputLastVersion(){
@@ -304,10 +311,10 @@ if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T"
 	read -e -p "Enter The Compare Version's Package Name(For Us To Make Ota Different Package):" -i "${SHORT_PROJECT_NAME}_${V_T}"_"${TARGET_BUILD_VARIANT}.zip" NAME
 	echo -e "\033[0m"
 
-   if [ -z "$NAME" ] ;then
+        if [ -z "$NAME" ] ;then
 	    fShowMenu;
-   else
-       OTA_COMPARED_VERSION_PACKAGE_NAME=$NAME
+        else
+            OTA_COMPARED_VERSION_PACKAGE_NAME=$NAME
 	fi
 fi
 
@@ -332,17 +339,23 @@ function cleanDust(){
    echo -e "`date '+%Y%m%d  %T'` Begin to clean last release version's dust......!"
 	if [ -d "$CKT_HOME/out" ]; then 
 		${CKT_HOME}/mk clean
-   fi 
+   	fi 
 	
 	rm -rf $CKT_HOME/out
 	rm -rf $CKT_HOME/ckt/*.zip
    rm -rf $CKT_HOME/ckt/.bin
 }
 
+function makeLog(){
+	local DT=`date '+%Y%m%d  %T'`
+	LOG=`echo $DT $1|awk '{printf "%-83 s\n" ,$0}'`
+}
+
 #build target version 
 if [ "$IS_ONLY_MAKE_PACHAGE" = "n" ] ;then
+	makeLog "Call 'mk' to make version..."
 	echo "+=========================================================================================+"
-	echo "+=                    `date '+%Y%m%d  %T'` Call 'mk' to make version...                  =+"
+	echo "+=  $LOG  =+"
 	echo "+=========================================================================================+"
 
 	#clear dust
@@ -369,9 +382,8 @@ if [ "$IS_ONLY_BUILD" = "T" ]  && [ "$IS_MAKE_OTA_PACKAGE" = "T" ]; then
 fi
 
 #make dir
-echo "+=========================================================================================+"
-echo "+=                  `date '+%Y%m%d  %T'` begin make version release folder...                       =+"
-echo "+=========================================================================================+"
+echo "-------------------------------------------------------------------------------------------"
+echo "`date '+%Y%m%d  %T'` begin make version release folder..."
 
 cd $FINAL_PACKAGE_SAVE_DIR
 rm -rf $FOLDER_NAME
@@ -417,7 +429,7 @@ function makeUsbUpdate(){
 	cd DATABASE
 	local CUSTOM_MODEM=`grep -w ^CUSTOM_MODEM $PROJECT_CONFIG_FILE|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
 	cp -f $CKT_HOME_MTK_MODEM/$CUSTOM_MODEM/BPLGUInfoCustomAppSrcP_* ./
-   cp -f $CKT_HOME/mediatek/cgen/APDB_MT6572_S01_MAIN2.1_W10.24 ./
+   	cp -f $CKT_HOME/mediatek/cgen/APDB_MT6572_S01_MAIN2.1_W10.24 ./
 
 	cd ../../
 }
@@ -433,18 +445,19 @@ if [ "$IS_MAKE_OTA_PACKAGE" = "F" ]; then
 fi
 
 #make ota different split package
+makeLog "begin to make ota different split package..."
 echo "+=========================================================================================+"
-echo "+=      `date '+%Y%m%d  %T'` begin to make ota different split package...                =+"
+echo "+=  $LOG  =+" 
 echo "+=========================================================================================+"
 
 function getLastVersionPackage(){
-	local FTP_ADDR_T=`sed -n '/^FTP_ADD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+   local FTP_ADDR_T=`sed -n '/^FTP_ADD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
    local FTP_ADDR=${FTP_ADDR_T#*=}
 
-	local FTP_USER_NAME_T=`sed -n '/^FTP_USER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+   local FTP_USER_NAME_T=`sed -n '/^FTP_USER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
    local FTP_USER_NAME=${FTP_USER_NAME_T#*=}
 
-	local FTP_USER_PASSORD_T=`sed -n '/^FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+   local FTP_USER_PASSORD_T=`sed -n '/^FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
    local FTP_USER_PASSORD=${FTP_USER_PASSORD_T#*=}
         
    local FTP_URL=$FTP_USER_NAME":"$FTP_USER_PASSORD"@"$FTP_ADDR
@@ -488,9 +501,9 @@ function makeUpdateOtaPackageName(){
 	SHORT_PROJECT_NAME=`echo $SHORT_PROJECT_NAME_T|tr '[:upper:]' '[:lower:]'`
 
 	local V_N=`echo $VERSION|tr '[:upper:]' '[:lower:]'` 
-   local V=""
+        local V=""
 
-   if [ "$OTA_COMPARED_VERSION" = "default" ] || [ "$OTA_COMPARED_VERSION" = "d" ] || [ "$OTA_COMPARED_VERSION" = "dflt" ]; then
+        if [ "$OTA_COMPARED_VERSION" = "default" ] || [ "$OTA_COMPARED_VERSION" = "d" ] || [ "$OTA_COMPARED_VERSION" = "dflt" ]; then
 		local V_T=`getLastVersion`
 
 		PREVIOUS_VERSION=${FOLDER_NAME_PRE}${V_T}
@@ -514,8 +527,9 @@ cd $CKT_HOME
 ./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $OTA_DIFF_FILE
 checkCommandExc;
 
+makeLog "begin to make validate ota different split package..."
 echo "+=========================================================================================+"
-echo "+=      `date '+%Y%m%d  %T'` begin to make validate ota different split package...       =+"
+echo "+=  $LOG  =+"
 echo "+=========================================================================================+"
 #buil validate ota different split package
 ./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i  $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME $OTA_DIFF_FILE_VALIDATE
@@ -663,16 +677,18 @@ if [ "$IS_MAKE_HUAWEI_OTA_PACKAGE" = "F" ]; then
 fi
 
 #make vendor ota file
+makeLog "begin to make vendor ota file..."
 echo "+=========================================================================================+"
-echo "+=      `date '+%Y%m%d  %T'` begin to make vendor ota file...                            =+"
+echo "+=  $LOG  =+"
 echo "+=========================================================================================+"
 
 readVendorOtaConfig;
 
 makeVendorOtaFile "T";
 
+makeLog "begin to make validate vendor ota file..."
 echo "+=========================================================================================+"
-echo "+=      `date '+%Y%m%d  %T'` begin to make validate vendor ota file...                   =+"
+echo "+=  $LOG  =+"
 echo "+=========================================================================================+"
 
 makeVendorOtaFile "F";
