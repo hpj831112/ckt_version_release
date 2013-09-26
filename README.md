@@ -39,7 +39,8 @@ ckt_version_release
 	   -l：做差分包需要的以前版本的OTA中间文件文件的版本号。如：u10_b211_user.zip的版本号为B211，为[default/d/dflt]时系统会默认与当前版本的前一个版本做差分，不为default时，必须输入上一个版本的版本号，如：B211，否则结果可能与你想象的不同
 	   -n：不做差分包参数，如：ckt_release -x -n，这样的参数形式的话，系统只会帮助用户完成将编译出来的版本进行打包而不会做差分包以及华为特有的差分包
 	   -x: 超级打包参数
-	   -w: 生成华为特有差分包的参数，如：ckt_release -x -l d -o u10_b211_user.zip -w，如果这样调用则系统会帮助用户完成除编译以外的全部版本发布工作
+	   -w: 不生成华为特有差分包的参数，如：ckt_release -x -l d -o u10_b211_user.zip -w，如果这样调用则系统就不会帮助用户生成华为特定的升级包
+	   -R：将原英文目录改成版本发布时所需的中文目录名称。请慎用此参数，仅在系统的shell支持中文的情况此参数才能起作用
 	   -?：显示帮助信息
 
     六、简单使用例子
@@ -50,7 +51,7 @@ ckt_version_release
 	3、使用本工具打包且不做差分包
 	   ckt_release -x -n
 	4、使用本工具完成编译以外的全部版本发布工作
-	    ckt_release -x -l d -o u10_b211_user.zip -w
+	    ckt_release -x -l d -o u10_b211_user.zip
 	5、使用本工具编译版本并当前版本的前一版本对比生成差分包
 	   命令：ckt_release -l d
 	   之后根据提示输入相应的信息则可以完成整套流程
@@ -58,7 +59,7 @@ ckt_version_release
 	   命令：ckt_release -x -l d 或ckt_release -l d -x
 		  
 	7、如果不想使用工具菜单进行引导，用户也可以输入完整参数，如：
-	   ckt_release -p ckt72_we_jb3 -t user -v B212 -i B212 -o u10_b211_user.zip -l B211 -w
+	   ckt_release -p ckt72_we_jb3 -t user -v B212 -i B212 -o u10_b211_user.zip -l B211
 	
     七、使用建议
 	1、关于生成差分包时需要对比的上一版本的中间文件：

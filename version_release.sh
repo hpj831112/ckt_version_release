@@ -27,7 +27,7 @@ IS_ONLY_MAKE_PACHAGE="n"
 OTA_COMPARED_VERSION_PACKAGE_NAME=""
 
 #user introduction
-USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w make_vendor_ota_package] [-? show_this_message] "
+USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w not_make_vendor_ota_package] [-C not_change_dir_name] [-? show_this_message]"
 
 #option count
 OPTION_COUNT=$#
@@ -42,7 +42,10 @@ IS_SHOW_COPYRIGHT="T"
 IS_MAKE_OTA_PACKAGE="T"
 
 #demain is make the huawei ota package
-IS_MAKE_HUAWEI_OTA_PACKAGE="F"
+IS_MAKE_HUAWEI_OTA_PACKAGE="T"
+
+#demain need change dir name for chinese
+NEED_CHANGE_DIR_NAME="F"
 
 function checkCommandExc(){
 	if [ $? -ne 0 ];then
@@ -85,7 +88,7 @@ function fShowMenu(){
 }
 
 #read user input options
-while getopts ":p:t:v:i:z:o:l:mnwx" opt; do
+while getopts ":p:t:v:i:z:o:l:mnwxR" opt; do
     case $opt in
         p ) PROJECT_NAME=$OPTARG 
             ;;
@@ -105,9 +108,11 @@ while getopts ":p:t:v:i:z:o:l:mnwx" opt; do
             ;;
        \n ) IS_MAKE_OTA_PACKAGE="F" 
             ;;
-       \w ) IS_MAKE_HUAWEI_OTA_PACKAGE="T"
+       \w ) IS_MAKE_HUAWEI_OTA_PACKAGE="F"
             ;;
        \x ) IS_ONLY_MAKE_PACHAGE="y"
+            ;;
+		 \R ) NEED_CHANGE_DIR_NAME="T"
             ;;
        \? ) echo $USAGE 
 	    IS_SHOW_COPYRIGHT="F"
@@ -220,7 +225,7 @@ if [ -z "$VERSION" ];then
 	if [ -n "$VERSION" ] ;then
 	    if [ $VERSION != $HWV_BUILD_VERSION ] ;then   
 	       sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
-               checkCommandExc;
+          checkCommandExc;
 	    fi
 	fi
 else
@@ -278,6 +283,10 @@ function tipUserInputLastVersion(){
 		else
 		    OTA_COMPARED_VERSION=`echo $VSN|tr '[:lower:]' '[:upper:]'`
 		fi
+	else
+		if [ "$OTA_COMPARED_VERSION" = "DEFAULT" ] || [ "$OTA_COMPARED_VERSION" = "D" ] || [ "$OTA_COMPARED_VERSION" = "DFLT" ]; then
+			OTA_COMPARED_VERSION=`getLastVersion`
+		fi
 	fi
 }
 tipUserInputLastVersion;
@@ -295,10 +304,10 @@ if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T"
 	read -e -p "Enter The Compare Version's Package Name(For Us To Make Ota Different Package):" -i "${SHORT_PROJECT_NAME}_${V_T}"_"${TARGET_BUILD_VARIANT}.zip" NAME
 	echo -e "\033[0m"
 
-        if [ -z "$NAME" ] ;then
+   if [ -z "$NAME" ] ;then
 	    fShowMenu;
-        else
-            OTA_COMPARED_VERSION_PACKAGE_NAME=$NAME
+   else
+       OTA_COMPARED_VERSION_PACKAGE_NAME=$NAME
 	fi
 fi
 
@@ -320,14 +329,14 @@ if [ ! "$confirm" = 'y' ] ;then
 fi
 
 function cleanDust(){
-        echo -e "`date '+%Y%m%d  %T'` Begin to clean last release version's dust......!"
+   echo -e "`date '+%Y%m%d  %T'` Begin to clean last release version's dust......!"
 	if [ -d "$CKT_HOME/out" ]; then 
 		${CKT_HOME}/mk clean
-        fi 
+   fi 
 	
 	rm -rf $CKT_HOME/out
 	rm -rf $CKT_HOME/ckt/*.zip
-        rm -rf $CKT_HOME/ckt/.bin
+   rm -rf $CKT_HOME/ckt/.bin
 }
 
 #build target version 
@@ -356,7 +365,7 @@ fi
 
 if [ "$IS_ONLY_BUILD" = "T" ]  && [ "$IS_MAKE_OTA_PACKAGE" = "T" ]; then
 	echo "Build is completed, there has no more task to do, the tools will exit!"
-        exit
+   exit
 fi
 
 #make dir
@@ -373,16 +382,16 @@ rm -rf $FTP_BACKUP_DIR
 mkdir $FTP_BACKUP_DIR
 
 cd $FOLDER_NAME
-UPDATE_FOLDER=$FOLDER_NAME
-mkdir $UPDATE_FOLDER
 
-cd $UPDATE_FOLDER
-mkdir sdcard_update
-mkdir usb_update
+SDCARD_UPDATE="sdcard_update"
+USB_UPDATE="usb_update"
+
+mkdir $SDCARD_UPDATE
+mkdir $USB_UPDATE
 
 #copy sdcard update
 echo -e "`date '+%Y%m%d  %T'` copy sdcard update to folder..."
-cd sdcard_update
+cd $SDCARD_UPDATE
 cp -f $CKT_HOME/out/target/product/$PROJECT_NAME/$PROJECT_NAME-ota-*.zip ./update.zip
 checkCommandExc;
 
@@ -408,19 +417,19 @@ function makeUsbUpdate(){
 	cd DATABASE
 	local CUSTOM_MODEM=`grep -w ^CUSTOM_MODEM $PROJECT_CONFIG_FILE|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
 	cp -f $CKT_HOME_MTK_MODEM/$CUSTOM_MODEM/BPLGUInfoCustomAppSrcP_* ./
-        cp -f $CKT_HOME/mediatek/cgen/APDB_MT6572_S01_MAIN2.1_W10.24 ./
+   cp -f $CKT_HOME/mediatek/cgen/APDB_MT6572_S01_MAIN2.1_W10.24 ./
 
 	cd ../../
 }
 
 echo -e "`date '+%Y%m%d  %T'` make usb update to folder..."
-cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$UPDATE_FOLDER/usb_update
+cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$USB_UPDATE
 makeUsbUpdate;
 checkCommandExc;
 
 if [ "$IS_MAKE_OTA_PACKAGE" = "F" ]; then
 	echo "Package is maked completed, there has no more task to do, the tools will exit!"
-        exit
+   exit
 fi
 
 #make ota different split package
@@ -430,17 +439,17 @@ echo "+=========================================================================
 
 function getLastVersionPackage(){
 	local FTP_ADDR_T=`sed -n '/^FTP_ADD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-        local FTP_ADDR=${FTP_ADDR_T#*=}
+   local FTP_ADDR=${FTP_ADDR_T#*=}
 
 	local FTP_USER_NAME_T=`sed -n '/^FTP_USER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-        local FTP_USER_NAME=${FTP_USER_NAME_T#*=}
+   local FTP_USER_NAME=${FTP_USER_NAME_T#*=}
 
 	local FTP_USER_PASSORD_T=`sed -n '/^FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-        local FTP_USER_PASSORD=${FTP_USER_PASSORD_T#*=}
+   local FTP_USER_PASSORD=${FTP_USER_PASSORD_T#*=}
         
-        local FTP_URL=$FTP_USER_NAME":"$FTP_USER_PASSORD"@"$FTP_ADDR
+   local FTP_URL=$FTP_USER_NAME":"$FTP_USER_PASSORD"@"$FTP_ADDR
 
-        local TEMP_FOLDER_NAME="Y320U_EMMC/HOAT中间文件/$HWV_PROJECT_NAME/${HWV_PROJECT_NAME}"_"${TARGET_BUILD_VARIANT}";
+   local TEMP_FOLDER_NAME="Y320U_EMMC/HOAT中间文件/$HWV_PROJECT_NAME/${HWV_PROJECT_NAME}"_"${TARGET_BUILD_VARIANT}";
 
 #lftp $FTP_URL<< EOF
 	
@@ -460,7 +469,7 @@ mkdir -p ./$FOLDER_NAME/$OTA_UPDATE_DIR
 if [ -f "$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
 	cp -f $OTA_COMPARED_VERSION_PACKAGE_NAME ./$FOLDER_NAME/$OTA_UPDATE_DIR
 else
-        cd $FOLDER_NAME/$OTA_UPDATE_DIR
+   cd $FOLDER_NAME/$OTA_UPDATE_DIR
 	getLastVersionPackage;
 	cd -
 fi 
@@ -479,13 +488,10 @@ function makeUpdateOtaPackageName(){
 	SHORT_PROJECT_NAME=`echo $SHORT_PROJECT_NAME_T|tr '[:upper:]' '[:lower:]'`
 
 	local V_N=`echo $VERSION|tr '[:upper:]' '[:lower:]'` 
-        local V=""
+   local V=""
 
-        if [ "$OTA_COMPARED_VERSION" = "default" ] || [ "$OTA_COMPARED_VERSION" = "d" ] || [ "$OTA_COMPARED_VERSION" = "dflt" ]; then
-		local T=`echo $VERSION|tr -cd '[0-9\n]'`
-		local N=`expr $T \- 1`
-		local S=`echo $N|awk '{printf "%03s\n" ,$0}'` #add '0' if length less than 3 at left
-		local V_T=${VERSION/$T/$S}
+   if [ "$OTA_COMPARED_VERSION" = "default" ] || [ "$OTA_COMPARED_VERSION" = "d" ] || [ "$OTA_COMPARED_VERSION" = "dflt" ]; then
+		local V_T=`getLastVersion`
 
 		PREVIOUS_VERSION=${FOLDER_NAME_PRE}${V_T}
 		V=`echo $V_T|tr '[:upper:]' '[:lower:]'`	
@@ -494,7 +500,7 @@ function makeUpdateOtaPackageName(){
 		V=`echo $OTA_COMPARED_VERSION|tr '[:upper:]' '[:lower:]'`
 	fi
         
-        UPDATE_OTA_PACKAGE_NAME=${SHORT_PROJECT_NAME}_${V}"--"${V_N}"_"${TARGET_BUILD_VARIANT}".zip"
+   UPDATE_OTA_PACKAGE_NAME=${SHORT_PROJECT_NAME}_${V}"--"${V_N}"_"${TARGET_BUILD_VARIANT}".zip"
 	UPDATE_OTA_PACKAGE_NAME_VALIDATE=${SHORT_PROJECT_NAME}"_"${V_N}"--"${V}"_"${TARGET_BUILD_VARIANT}".zip"
 }
 
@@ -543,7 +549,7 @@ function readVendorOtaConfig(){
     local OTA_CONFIG_DIR_T=`sed -n '/^OTA_UPDATE_CONFIG_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
     OTA_CONFIG_DIR=${OTA_CONFIG_DIR_T#*=}
 
- local UPDATE_PACKAGE_DIR_T=`sed -n '/^OTA_UPDATE_PACKAGE_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    local UPDATE_PACKAGE_DIR_T=`sed -n '/^OTA_UPDATE_PACKAGE_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
     UPDATE_PACKAGE_DIR=${UPDATE_PACKAGE_DIR_T#*=}
 
     local CHANAGE_LOG_FILE_T=`sed -n '/^OTA_UPDATE_CHANAGE_LOG_FILE/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
@@ -649,8 +655,6 @@ function makeVendorOtaFile() {
     echo "packaging the ota file..."
     zip -rm $U_ZIP_NAME $FULL_DIR/
     echo "package finished!"
-    
-    cd -
 }
 
 if [ "$IS_MAKE_HUAWEI_OTA_PACKAGE" = "F" ]; then
@@ -672,6 +676,18 @@ echo "+=      `date '+%Y%m%d  %T'` begin to make validate vendor ota file...    
 echo "+=========================================================================================+"
 
 makeVendorOtaFile "F";
+
+if [ "T" = "$NEED_CHANGE_DIR_NAME" ];then
+	cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/;
+
+	OTA_UPDATE_FOLDER_NAME="OTA升级差分包"
+	SDCARD_UPDATE_FOLDER_NAME="SD卡升级软件包"
+	USB_UPDATE_FOLDER_NAME="USB升级软件包"
+
+	mv -f $OTA_UPDATE_DIR "$OTA_UPDATE_FOLDER_NAME"
+	mv -f $SDCARD_UPDATE "$SDCARD_UPDATE_FOLDER_NAME"
+	mv -f $USB_UPDATE "$USB_UPDATE_FOLDER_NAME"
+fi
 
 cd $FINAL_PACKAGE_SAVE_DIR
 ls -lt
