@@ -696,9 +696,11 @@ function copyDocAndTools(){
 	cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/;
 	cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/DOC ./
 	cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/update_tools ./
-	cd DOC
-	rename "s/VERSION_NAME/${FOLDER_NAME_PRE}${VERSION}/" *
-	rename "s/PROJECT_NAME/$HWV_PROJECT_NAME/" *
+	
+	#HePJ: Because every project has diffrent doc names, so the code below has no sense
+	#cd DOC
+	#rename "s/VERSION_NAME/${FOLDER_NAME_PRE}${VERSION}/" *
+	#rename "s/PROJECT_NAME/$HWV_PROJECT_NAME/" *
 }
 copyDocAndTools;
 
