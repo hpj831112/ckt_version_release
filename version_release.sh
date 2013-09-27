@@ -690,19 +690,31 @@ makeLog "begin to make validate vendor ota file..."
 echo "+=========================================================================================+"
 echo "+=  $LOG  =+"
 echo "+=========================================================================================+"
-
 makeVendorOtaFile "F";
+
+function copyDocAndTools(){
+	cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/;
+	cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/DOC ./
+	cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/update_tools ./
+	cd DOC
+	rename "s/VERSION_NAME/${FOLDER_NAME_PRE}${VERSION}/" *
+	rename "s/PROJECT_NAME/$HWV_PROJECT_NAME/" *
+}
+copyDocAndTools;
 
 if [ "T" = "$NEED_CHANGE_DIR_NAME" ];then
 	cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/;
-
+	
+	#HePJ: Because shell is not perfectly support chinese characters, so the chinese folder name can not config 
 	OTA_UPDATE_FOLDER_NAME="OTA升级差分包"
 	SDCARD_UPDATE_FOLDER_NAME="SD卡升级软件包"
 	USB_UPDATE_FOLDER_NAME="USB升级软件包"
+	UPDATE_TOOLS_FOLDER_NAME="升级工具及指导"
 
 	mv -f $OTA_UPDATE_DIR "$OTA_UPDATE_FOLDER_NAME"
 	mv -f $SDCARD_UPDATE "$SDCARD_UPDATE_FOLDER_NAME"
 	mv -f $USB_UPDATE "$USB_UPDATE_FOLDER_NAME"
+	mv -f update_tools "$UPDATE_TOOLS_FOLDER_NAME"
 fi
 
 cd $FINAL_PACKAGE_SAVE_DIR
