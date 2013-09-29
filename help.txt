@@ -1,5 +1,7 @@
 
     If you're newer, we strongly suggest you use the menu to guid you to use this tool.
+
+    Usage: ckt_release [-p] [-t] [-v] [-z] [-o] [-l] [-w -R -I -B]"
 	
     [-p]: project name,eg：ckt_we_jb3. 
           If you don't have any input, 'ckt_we_jb3' will be the default
