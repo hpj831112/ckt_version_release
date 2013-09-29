@@ -11,6 +11,9 @@ TARGET_BUILD_VARIANT="user"
 #version
 VERSION=""
 
+#folder name's version
+FINAL_VERSION=""
+
 #interior version
 INTERNAL_VERSION=""
 
@@ -27,7 +30,7 @@ IS_ONLY_MAKE_PACHAGE="n"
 OTA_COMPARED_VERSION_PACKAGE_NAME=""
 
 #user introduction
-USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w not_make_vendor_ota_package] [-C not_change_dir_name] [-? show_this_message]"
+USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w not_make_vendor_ota_package] [-R change_dir_name_to_chinese] [-I final_folder_name's_version_based_on_internal_versuon] [-? show_this_message]"
 
 #option count
 OPTION_COUNT=$#
@@ -49,6 +52,9 @@ NEED_CHANGE_DIR_NAME="F"
 
 #log info
 LOG=""
+
+#demain the final folder's name's version is based on internal version
+IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION="F"
 
 function checkCommandExc(){
 	if [ $? -ne 0 ];then
@@ -91,7 +97,7 @@ function fShowMenu(){
 }
 
 #read user input options
-while getopts ":p:t:v:i:z:o:l:mnwxR" opt; do
+while getopts ":p:t:v:i:z:o:l:mnwxRI" opt; do
     case $opt in
         p ) PROJECT_NAME=$OPTARG 
             ;;
@@ -115,7 +121,9 @@ while getopts ":p:t:v:i:z:o:l:mnwxR" opt; do
             ;;
        \x ) IS_ONLY_MAKE_PACHAGE="y"
             ;;
-		 \R ) NEED_CHANGE_DIR_NAME="T"
+       \I ) IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION="T"
+	;;
+       \R ) NEED_CHANGE_DIR_NAME="T"
             ;;
        \? ) echo $USAGE 
 	    IS_SHOW_COPYRIGHT="F"
@@ -264,12 +272,18 @@ else
    fi
 fi
 
+if [ "T" = "$IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION" ];then
+	FINAL_VERSION=$INTERNAL_VERSION
+else
+	FINAL_VERSION=$VERSION
+fi
+
 function getLastVersion(){
 	if [ -z "$OTA_COMPARED_VERSION" ]; then
-		local T=`echo $VERSION|tr -cd '[0-9\n]'`
+		local T=`echo $FINAL_VERSION|tr -cd '[0-9\n]'`
 		local N=`expr $T \- 1`
 		local S=`echo $N|awk '{printf "%03s\n" ,$0}'` #add '0' if length less than 3 at left
-		local V_T=${VERSION/$T/$S}
+		local V_T=${FINAL_VERSION/$T/$S}
 	
 		echo $V_T
 	else
@@ -318,7 +332,7 @@ if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T"
 	fi
 fi
 
-FOLDER_NAME=${FOLDER_NAME_PRE}${VERSION}"_"${TARGET_BUILD_VARIANT}
+FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}
 
 echo -e "Please confirm the build information:"
 echo -e "\t Project Name:\033[49;31;5m "${PROJECT_NAME}"\033[0m "
@@ -389,7 +403,7 @@ cd $FINAL_PACKAGE_SAVE_DIR
 rm -rf $FOLDER_NAME
 mkdir $FOLDER_NAME
 
-FTP_BACKUP_DIR=`echo ${VERSION}"_"${TARGET_BUILD_VARIANT}"_ftp_backup"|tr '[:upper:]' '[:lower:]'`
+FTP_BACKUP_DIR=`echo ${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}"_ftp_backup"|tr '[:upper:]' '[:lower:]'`
 rm -rf $FTP_BACKUP_DIR
 mkdir $FTP_BACKUP_DIR
 
@@ -476,7 +490,7 @@ function getLastVersionPackage(){
 #getLastVersionPackage
 cd $FINAL_PACKAGE_SAVE_DIR/
 
-OTA_UPDATE_DIR=`echo ${VERSION}"_"${TARGET_BUILD_VARIANT}"_"${VENDOR}"_ota_update"|tr '[:upper:]' '[:lower:]'`
+OTA_UPDATE_DIR=`echo ${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}"_"${VENDOR}"_ota_update"|tr '[:upper:]' '[:lower:]'`
 mkdir -p ./$FOLDER_NAME/$OTA_UPDATE_DIR
 
 if [ -f "$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
@@ -500,7 +514,7 @@ function makeUpdateOtaPackageName(){
 	local SHORT_PROJECT_NAME_T=${HWV_PROJECT_NAME#*-}
 	SHORT_PROJECT_NAME=`echo $SHORT_PROJECT_NAME_T|tr '[:upper:]' '[:lower:]'`
 
-	local V_N=`echo $VERSION|tr '[:upper:]' '[:lower:]'` 
+	local V_N=`echo $FINAL_VERSION|tr '[:upper:]' '[:lower:]'` 
         local V=""
 
         if [ "$OTA_COMPARED_VERSION" = "default" ] || [ "$OTA_COMPARED_VERSION" = "d" ] || [ "$OTA_COMPARED_VERSION" = "dflt" ]; then
@@ -539,7 +553,7 @@ rm -f $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION
 
 cd $FINAL_PACKAGE_SAVE_DIR
 
-cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/${SHORT_PROJECT_NAME}"_"${VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
+cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/${SHORT_PROJECT_NAME}"_"${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
 checkCommandExc;
 
 HUAWEI_OTA_PACKAGE_NAME=""
@@ -586,14 +600,14 @@ function makeVendorOtaFile() {
 
     if [ "$1" = "T" ]; then
         VSN="$FOLDER_NAME_PRE$VERSION"
-        FTS="$PREVIOUS_VERSION to ${FOLDER_NAME_PRE}${VERSION}"
+        FTS="$PREVIOUS_VERSION to ${FOLDER_NAME_PRE}${FINAL_VERSION}"
         SPTH="$HUAWEI_OTA_PACKAGE_NAME"
         DPTH="$HUAWEI_OTA_PACKAGE_NAME"
         ODFL="$OTA_DIFF_FILE"
         U_ZIP_NAME=${PREVIOUS_VERSION}"_"${TARGET_BUILD_VARIANT}"--"${FOLDER_NAME}"-updatepackage.zip"
     else
         VSN="$PREVIOUS_VERSION"
-        FTS="${FOLDER_NAME_PRE}${VERSION} to $PREVIOUS_VERSION"
+        FTS="${FOLDER_NAME_PRE}${FINAL_VERSION} to $PREVIOUS_VERSION"
         SPTH="$HUAWEI_OTA_PACKAGE_NAME"
         DPTH="$HUAWEI_OTA_PACKAGE_NAME"
         ODFL="$OTA_DIFF_FILE_VALIDATE"
