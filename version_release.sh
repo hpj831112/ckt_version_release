@@ -30,7 +30,7 @@ IS_ONLY_MAKE_PACHAGE="n"
 OTA_COMPARED_VERSION_PACKAGE_NAME=""
 
 #user introduction
-USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w not_make_vendor_ota_package] [-R change_dir_name_to_chinese] [-I final_folder_name's_version_based_on_internal_versuon] [-? show_this_message]"
+USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w not_make_vendor_ota_package] [-R change_dir_name_to_chinese] [-I final_folder_name's_version_based_on_internal_versuon] [-B open_ftp_backup_function] [-? show_this_message]"
 
 #option count
 OPTION_COUNT=$#
@@ -55,6 +55,15 @@ LOG=""
 
 #demain the final folder's name's version is based on internal version
 IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION="F"
+
+#demain if need us to help user send ftp backup file to FTP service
+IS_SEND_BACKUP_FILE_TO_SERVICE="F"
+
+cd /sbin
+VERSION_RELEASE_HOME_T=`readlink ckt_release`
+VERSION_RELEASE_SHELL_FOLDER=${VERSION_RELEASE_HOME_T%*/*}
+VERSION_RELEASE_CONFIG_FILE="$VERSION_RELEASE_SHELL_FOLDER/config.conf"
+cd -
 
 function checkCommandExc(){
 	if [ $? -ne 0 ];then
@@ -96,8 +105,12 @@ function fShowMenu(){
     fi
 }
 
+function showHelpInfo(){
+    cat $VERSION_RELEASE_SHELL_FOLDER/help.txt
+}
+
 #read user input options
-while getopts ":p:t:v:i:z:o:l:mnwxRI" opt; do
+while getopts ":p:t:v:i:z:o:l:hmnwxRIB" opt; do
     case $opt in
         p ) PROJECT_NAME=$OPTARG 
             ;;
@@ -125,7 +138,13 @@ while getopts ":p:t:v:i:z:o:l:mnwxRI" opt; do
 	;;
        \R ) NEED_CHANGE_DIR_NAME="T"
             ;;
+       \B ) IS_SEND_BACKUP_FILE_TO_SERVICE="T"
+	    ;;
        \? ) echo $USAGE 
+	    IS_SHOW_COPYRIGHT="F"
+            exit 1 
+            ;;
+       \h ) showHelpInfo
 	    IS_SHOW_COPYRIGHT="F"
             exit 1 
             ;;
@@ -158,12 +177,6 @@ CKT_HOME_OUT_PROJECT=${CKT_HOME}"/out/target/product/$PROJECT_NAME"
 CKT_HOME_MTK_MODEM=${CKT_HOME}"/mediatek/custom/common/modem"
 PROJECT_CONFIG_FILE="$CKT_HOME/mediatek/config/$PROJECT_NAME/ProjectConfig.mk"
 
-cd /sbin
-VERSION_RELEASE_HOME_T=`readlink ckt_release`
-VERSION_RELEASE_SHELL_FOLDER=${VERSION_RELEASE_HOME_T%*/*}
-VERSION_RELEASE_CONFIG_FILE="$VERSION_RELEASE_SHELL_FOLDER/config.conf"
-cd -
-
 #make ota different split package saved dir
 FINAL_PACKAGE_SAVE_DIR_T=`sed -n '/^FINAL_PACKAGE_SAVE_DIR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
 checkCommandExc;
@@ -182,7 +195,7 @@ FOLDER_NAME_PRE=""
 HWV_BUILD_VERSION=""
 HWV_BUILDINTERNAL_VERSION=""
 HWV_PROJECT_NAME=""
-
+HWV_CUSTOM_VERSION=""
 function getVersionParam(){
 	#read version control
 	local HWV_PROJECT_NAME_T=`sed -n '/^HWV_PROJECT_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
@@ -203,10 +216,11 @@ function getVersionParam(){
 	local HWV_BUILD_VERSION_T=`sed -n '/^HWV_BUILD_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
         checkCommandExc;
 
+
 	HWV_PROJECT_NAME=${HWV_PROJECT_NAME_T#*=}
 	local HWV_VERSION_NAME=${HWV_VERSION_NAME_T#*=}
 	local HWV_RELEASE_NAME=${HWV_RELEASE_NAME_T#*=}
-	local HWV_CUSTOM_VERSION=${HWV_CUSTOM_VERSION_T#*=}
+	HWV_CUSTOM_VERSION=${HWV_CUSTOM_VERSION_T#*=}
 	HWV_BUILD_VERSION=${HWV_BUILD_VERSION_T#*=}
         HWV_BUILDINTERNAL_VERSION=${HWV_BUILDINTERNAL_VERSION_T#*=}
 
@@ -466,25 +480,33 @@ echo "+=========================================================================
 
 function getLastVersionPackage(){
    local FTP_ADDR_T=`sed -n '/^FTP_ADD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-   local FTP_ADDR=${FTP_ADDR_T#*=}
+   FTP_ADDR=${FTP_ADDR_T#*=}
 
    local FTP_USER_NAME_T=`sed -n '/^FTP_USER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-   local FTP_USER_NAME=${FTP_USER_NAME_T#*=}
+   FTP_USER_NAME=${FTP_USER_NAME_T#*=}
 
    local FTP_USER_PASSORD_T=`sed -n '/^FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-   local FTP_USER_PASSORD=${FTP_USER_PASSORD_T#*=}
+   FTP_USER_PASSORD=${FTP_USER_PASSORD_T#*=}
         
-   local FTP_URL=$FTP_USER_NAME":"$FTP_USER_PASSORD"@"$FTP_ADDR
+   FTP_URL=$FTP_USER_NAME":"$FTP_USER_PASSORD"@"$FTP_ADDR
 
-   local TEMP_FOLDER_NAME="Y320U_EMMC/HOAT中间文件/$HWV_PROJECT_NAME/${HWV_PROJECT_NAME}"_"${TARGET_BUILD_VARIANT}";
+   FTP_FOLDER_NAME="";
 
-#lftp $FTP_URL<< EOF
-	
-	#cd $TEMP_FOLDER_NAME;
-        #get $OTA_COMPARED_VERSION_PACKAGE_NAME;
-        #bye;
-	
-#EOF
+   if [ "$HWV_CUSTOM_VERSION" = "C00" ]; then
+       FTP_FOLDER_NAME="$HWV_PROJECT_NAME/${HWV_PROJECT_NAME}"_"${TARGET_BUILD_VARIANT}";
+   else
+       FTP_FOLDER_NAME="${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}/${HWV_PROJECT_NAME}"_"${TARGET_BUILD_VARIANT}";
+   fi
+
+#do not change the EOF code's position for it must code lisk this!
+lftp $FTP_URL<< EOF
+	set ftp:charset gbk;
+	cd Y320U_EMMC;
+	cd HOAT中间文件;
+	cd $FTP_FOLDER_NAME;
+        get $OTA_COMPARED_VERSION_PACKAGE_NAME;
+        bye;
+EOF
 }
 
 #getLastVersionPackage
@@ -527,7 +549,7 @@ function makeUpdateOtaPackageName(){
 		V=`echo $OTA_COMPARED_VERSION|tr '[:upper:]' '[:lower:]'`
 	fi
         
-   UPDATE_OTA_PACKAGE_NAME=${SHORT_PROJECT_NAME}_${V}"--"${V_N}"_"${TARGET_BUILD_VARIANT}".zip"
+        UPDATE_OTA_PACKAGE_NAME=${SHORT_PROJECT_NAME}_${V}"--"${V_N}"_"${TARGET_BUILD_VARIANT}".zip"
 	UPDATE_OTA_PACKAGE_NAME_VALIDATE=${SHORT_PROJECT_NAME}"_"${V_N}"--"${V}"_"${TARGET_BUILD_VARIANT}".zip"
 }
 
@@ -553,7 +575,8 @@ rm -f $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION
 
 cd $FINAL_PACKAGE_SAVE_DIR
 
-cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/${SHORT_PROJECT_NAME}"_"${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
+FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=${SHORT_PROJECT_NAME}"_"${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
+cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/$FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
 checkCommandExc;
 
 HUAWEI_OTA_PACKAGE_NAME=""
@@ -732,6 +755,21 @@ if [ "T" = "$NEED_CHANGE_DIR_NAME" ];then
 	mv -f $USB_UPDATE "$USB_UPDATE_FOLDER_NAME"
 	mv -f update_tools "$UPDATE_TOOLS_FOLDER_NAME"
 fi
+
+# send hoat middle file to ftp service to backup
+if [ "T" = "$IS_SEND_BACKUP_FILE_TO_SERVICE" ];then
+	cd $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/
+
+#do not change the EOF code's position for it must code lisk this!
+lftp $FTP_URL<< EOF
+	set ftp:charset gbk;
+	cd Y320U_EMMC;
+	cd HOAT中间文件;
+	cd $FTP_FOLDER_NAME;
+        mput *.zip;
+        bye;
+EOF
+if
 
 cd $FINAL_PACKAGE_SAVE_DIR
 ls -lt

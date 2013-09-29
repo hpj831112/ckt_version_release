@@ -1,0 +1,39 @@
+
+    If you're newer, we strongly suggest you use the menu to guid you to use this tool.
+	
+    [-p]: project name,eg：ckt_we_jb3. 
+          If you don't have any input, 'ckt_we_jb3' will be the default
+
+    [-t]: target build version，eg：user/eng. 
+          If you don't have any input, 'user' will be the default
+
+    [-v]: external version，eg：B211
+
+    [-i]：internal version，eg：B212
+
+    [-m]：only make，eg：ckt_release -m，
+          If you use this option, the tool will only help you to make version
+
+    [-z]：like[-x]，but this option use in the whole options
+
+    [-o]: the name of last HOAT package name for us to make ota different package，eg：u10_b211_user.zip
+
+    [-l]：the version in HOAT file, eg：the version in u10_b211_user.zip is B211. 
+          When use [default/dflt/d], the tool will use the lasted previous version
+
+    [-n]：if you don't like to make ota different package, you may use this option like this 'ckt_release -x -n'
+
+    [-x]: supper package option. 
+          If already builded the versions use other tools, you can use this option to help you to do the left things of the version release job  
+
+    [-w]: do not make the Hauwei's special ota package，eg：ckt_release -x -w.
+
+    [-R]：rename the folder name to chinese charactor. 
+          Please use this option carefully, because it depend on your system's shell can support chinese charactor
+
+    [-I]：special designed for only change the internal version's situation for the external version is locked. 
+          If you use this option, the version in final package names will base on the internal version, eg：ckt_release -x -I
+
+    [-B]：open FTP backup function. Please use this option carefully, because the network is often unstable. eg: ckt_release -x -B
+
+    [-?]：show usage
