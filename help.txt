@@ -14,7 +14,7 @@
     [-i]: internal version，eg：B212
 
     [-m]: only make，eg：ckt_release -m，
-          If you use this option, the tool will only help you to make version
+          If you use this option, the tool will only help you to build version
 
     [-z]: like[-x]，but this option use in the whole options
 

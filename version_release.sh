@@ -174,7 +174,7 @@ if [ "T" = "$IS_SHOW_COPYRIGHT" ]; then
 	showCopyright;
 fi
 
-if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || ; then
+if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ]; then
    fShowMenu;
    IS_MENU_SHOW="T"
 fi
@@ -254,18 +254,6 @@ if [ -z "$VERSION" ];then
 	if [ -z "$BUILD_VERSION" ] ;then
 	    VERSION=$HWV_BUILD_VERSION
 	fi
-
-	if [ -n "$VERSION" ] ;then
-	    if [ $VERSION != $HWV_BUILD_VERSION ] ;then   
-	       sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
-          checkCommandExc;
-	    fi
-	fi
-else
-   if [ $VERSION != $HWV_BUILD_VERSION ] ;then
-      sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
-      checkCommandExc;
-   fi
 fi
 
 #modify internal version
@@ -280,18 +268,6 @@ if [ -z "$INTERNAL_VERSION" ];then
 	if [ -z "$INTERNAL_VERSION" ] ;then
 	    INTERNAL_VERSION=$HWV_BUILDINTERNAL_VERSION
 	fi
-
-	if [ -n "$INTERNAL_VERSION" ] ;then
-	    if [ $INTERNAL_VERSION != $HWV_BUILDINTERNAL_VERSION ] ;then   
-	       sed -i "s/HWV_BUILDINTERNAL_VERSION \= $HWV_BUILDINTERNAL_VERSION/HWV_BUILDINTERNAL_VERSION \= $INTERNAL_VERSION/g" "$PROJECT_CONFIG_FILE"
-               checkCommandExc;
-	    fi
-	fi
-else
-   if [ $INTERNAL_VERSION != $HWV_BUILDINTERNAL_VERSION ] ;then
-      sed -i "s/HWV_BUILDINTERNAL_VERSION \= $HWV_BUILDINTERNAL_VERSION/HWV_BUILDINTERNAL_VERSION \= $INTERNAL_VERSION/g" "$PROJECT_CONFIG_FILE"
-      checkCommandExc;
-   fi
 fi
 
 if [ "T" = "$IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION" ];then
@@ -301,7 +277,8 @@ else
 fi
 
 function getLastVersion(){
-	if [ -z "$OTA_COMPARED_VERSION" ]; then
+	local OCV=`echo $OTA_COMPARED_VERSION|tr '[:upper:]' '[:lower:]'`
+	if [ -z "$OCV" ] || [ "$OCV" = "default" ] || [ "$OCV" = "d" ] || [ "$OCV" = "dflt" ]; then
 		local T=`echo $FINAL_VERSION|tr -cd '[0-9\n]'`
 		local N=`expr $T \- 1`
 		local S=`echo $N|awk '{printf "%03s\n" ,$0}'` #add '0' if length less than 3 at left
@@ -327,7 +304,9 @@ function tipUserInputLastVersion(){
 		    OTA_COMPARED_VERSION=`echo $VSN|tr '[:lower:]' '[:upper:]'`
 		fi
 	else
-		if [ "$OTA_COMPARED_VERSION" = "DEFAULT" ] || [ "$OTA_COMPARED_VERSION" = "D" ] || [ "$OTA_COMPARED_VERSION" = "DFLT" ]; then
+
+		local OCV=`echo $OTA_COMPARED_VERSION|tr '[:upper:]' '[:lower:]'`
+                if [ "$OCV" = "default" ] || [ "$OCV" = "d" ] || [ "$OCV" = "dflt" ]; then
 			OTA_COMPARED_VERSION=`getLastVersion`
 		fi
 	fi
@@ -368,7 +347,17 @@ echo -e "\t it's correctly(y/n): \c "
 
 read confirm
 if [ ! "$confirm" = 'y' ] ;then
-  exit
+    exit
+else
+    if [ $VERSION != $HWV_BUILD_VERSION ] ;then   
+	sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
+        checkCommandExc;
+    fi
+
+    if [ $INTERNAL_VERSION != $HWV_BUILDINTERNAL_VERSION ] ;then   
+	sed -i "s/HWV_BUILDINTERNAL_VERSION \= $HWV_BUILDINTERNAL_VERSION/HWV_BUILDINTERNAL_VERSION \= $INTERNAL_VERSION/g" "$PROJECT_CONFIG_FILE"
+        checkCommandExc;
+    fi
 fi
 
 function cleanDust(){
@@ -546,8 +535,8 @@ function makeUpdateOtaPackageName(){
 
 	local V_N=`echo $FINAL_VERSION|tr '[:upper:]' '[:lower:]'` 
         local V=""
-
-        if [ "$OTA_COMPARED_VERSION" = "default" ] || [ "$OTA_COMPARED_VERSION" = "d" ] || [ "$OTA_COMPARED_VERSION" = "dflt" ]; then
+        local OCV=`echo $OTA_COMPARED_VERSION|tr '[:upper:]' '[:lower:]'`
+        if [ "$OCV" = "default" ] || [ "$OCV" = "d" ] || [ "$OCV" = "dflt" ]; then
 		local V_T=`getLastVersion`
 
 		PREVIOUS_VERSION=${FOLDER_NAME_PRE}${V_T}
@@ -579,9 +568,14 @@ echo "+=========================================================================
 ./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i  $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME $OTA_DIFF_FILE_VALIDATE
 checkCommandExc;
 
-rm -f $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME
-
 cd $FINAL_PACKAGE_SAVE_DIR
+
+## if the ota compared version's package download from FTP service, keep it on local machine
+if [ -f "$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
+	rm -f $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME
+else
+	mv -f $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME ./
+fi
 
 FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=${SHORT_PROJECT_NAME}"_"${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
 cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/$FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
@@ -765,7 +759,7 @@ if [ "T" = "$NEED_CHANGE_DIR_NAME" ];then
 fi
 
 # send hoat middle file to ftp service to backup
-if [ "T" = "$IS_SEND_BACKUP_FILE_TO_SERVICE" ];then
+if [ "T" = "$IS_SEND_BACKUP_FILE_TO_SERVICE" ]; then
 	cd $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/
 
 #do not change the EOF code's position for it must be coded lisk this!
@@ -777,7 +771,7 @@ lftp $FTP_URL<< EOF
         mput *.zip;
         bye;
 EOF
-if
+fi
 
 cd $FINAL_PACKAGE_SAVE_DIR
 ls -lt
