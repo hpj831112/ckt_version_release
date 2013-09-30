@@ -30,7 +30,7 @@ IS_ONLY_MAKE_PACHAGE="n"
 OTA_COMPARED_VERSION_PACKAGE_NAME=""
 
 #user introduction
-USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w not_make_vendor_ota_package] [-R change_dir_name_to_chinese] [-I final_folder_name's_version_based_on_internal_versuon] [-B open_ftp_backup_function] [-? show_this_message]"
+USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-i internal_version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w not_make_vendor_ota_package] [-R change_dir_name_to_chinese] [-I final_folder_name's_version_based_on_internal_versuon] [-B open_ftp_backup_function] [-? show_this_message]"
 
 #option count
 OPTION_COUNT=$#
@@ -106,11 +106,15 @@ function fShowMenu(){
 }
 
 function showHelpInfo(){
-    cat $VERSION_RELEASE_SHELL_FOLDER/help.txt
+    more $VERSION_RELEASE_SHELL_FOLDER/help.txt
+}
+
+function showReadme(){
+    more $VERSION_RELEASE_SHELL_FOLDER/README.md
 }
 
 #read user input options
-while getopts ":p:t:v:i:z:o:l:hmnwxRIB" opt; do
+while getopts ":p:t:v:i:z:o:l:hmnwxRIBS" opt; do
     case $opt in
         p ) PROJECT_NAME=$OPTARG 
             ;;
@@ -148,6 +152,10 @@ while getopts ":p:t:v:i:z:o:l:hmnwxRIB" opt; do
 	    IS_SHOW_COPYRIGHT="F"
             exit 1 
             ;;
+       \S ) showReadme
+	    IS_SHOW_COPYRIGHT="F"
+            exit 1 
+            ;;
     esac
 done
 
@@ -166,7 +174,7 @@ if [ "T" = "$IS_SHOW_COPYRIGHT" ]; then
 	showCopyright;
 fi
 
-if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ]; then
+if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || ; then
    fShowMenu;
    IS_MENU_SHOW="T"
 fi
@@ -498,7 +506,7 @@ function getLastVersionPackage(){
        FTP_FOLDER_NAME="${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}/${HWV_PROJECT_NAME}"_"${TARGET_BUILD_VARIANT}";
    fi
 
-#do not change the EOF code's position for it must code lisk this!
+#do not change the EOF code's position for it must be coded lisk this!
 lftp $FTP_URL<< EOF
 	set ftp:charset gbk;
 	cd Y320U_EMMC;
@@ -760,7 +768,7 @@ fi
 if [ "T" = "$IS_SEND_BACKUP_FILE_TO_SERVICE" ];then
 	cd $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/
 
-#do not change the EOF code's position for it must code lisk this!
+#do not change the EOF code's position for it must be coded lisk this!
 lftp $FTP_URL<< EOF
 	set ftp:charset gbk;
 	cd Y320U_EMMC;
