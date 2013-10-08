@@ -118,7 +118,7 @@ while getopts ":p:t:v:i:z:o:l:hmnwxRIBS" opt; do
     case $opt in
         p ) PROJECT_NAME=$OPTARG 
             ;;
-        t ) TARGET_BUILD_VARIANT=$OPTARG 
+        t ) TARGET_BUILD_VARIANT=`echo $OPTARG|tr '[:upper:]' '[:lower:]'`
             ;;
         v ) VERSION=`echo $OPTARG|tr '[:lower:]' '[:upper:]'` 
             ;;
@@ -126,7 +126,7 @@ while getopts ":p:t:v:i:z:o:l:hmnwxRIBS" opt; do
             ;;
        \m ) IS_ONLY_BUILD="T" 
             ;;
-        z ) IS_ONLY_MAKE_PACHAGE=$OPTARG 
+        z ) IS_ONLY_MAKE_PACHAGE=`echo $OPTARG|tr '[:upper:]' '[:lower:]'`
             ;;
         o ) OTA_COMPARED_VERSION_PACKAGE_NAME=$OPTARG 
             ;;
@@ -368,7 +368,7 @@ function cleanDust(){
 	
 	rm -rf $CKT_HOME/out
 	rm -rf $CKT_HOME/ckt/*.zip
-   rm -rf $CKT_HOME/ckt/.bin
+        rm -rf $CKT_HOME/ckt/.bin
 }
 
 function makeLog(){
@@ -402,7 +402,7 @@ if [ "$IS_ONLY_MAKE_PACHAGE" = "n" ] ;then
 fi
 
 if [ "$IS_ONLY_BUILD" = "T" ]  && [ "$IS_MAKE_OTA_PACKAGE" = "T" ]; then
-	echo "Build is completed, there has no more task to do, the tools will exit!"
+   echo "Build is completed, there has no more task to do, the tools will exit!"
    exit
 fi
 
@@ -465,8 +465,8 @@ makeUsbUpdate;
 checkCommandExc;
 
 if [ "$IS_MAKE_OTA_PACKAGE" = "F" ]; then
-	echo "Package is maked completed, there has no more task to do, the tools will exit!"
-   exit
+   echo "Package is maked completed, there has no more task to do, the tools will exit!"
+   exit 1
 fi
 
 #make ota different split package
