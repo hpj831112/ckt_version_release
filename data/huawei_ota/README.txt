@@ -1,0 +1,51 @@
+﻿	
+$VERSION_LOW  版本到  $VERSION_HEIGHT  版本
+
+$VERSION_HEIGHT  版本到  $VERSION_LOW  版本
+
+1、版本HOTA测试目的：内部验证 或 商用发布测试
+2、计划HOTA测试开始时间： $CURRENT_DATE
+3、此HOTA升级是否针对user版本：是 或 否
+
+
+1、设备名称：$DEVICE_NAME
+
+2、假版本号（外部版本号）：
+
+   2.1：
+   基础版本号： $VERSION_LOW
+  
+   目标版本号： $VERSION_HEIGHT
+
+  2.2：
+   基础版本号： $VERSION_HEIGHT  
+  
+   目标版本号： $VERSION_LOW
+
+3、真版本号（内部版本号）：
+
+   3.1：
+   基础版本号： $INTERNAL_VERSION_LOW
+  
+   目标版本号： $INTERNAL_VERSION_HEIGHT
+ 
+  3.2：
+   基础版本号： $INTERNAL_VERSION_HEIGHT
+  
+   目标版本号： $INTERNAL_VERSION_LOW
+
+4、测试手机的IMEI号：
+881234567812084
+881234567812184
+881234567812284
+881234567812384
+881234567812484
+881234567812584
+881234567812684
+881234567812784
+881234567812884
+881234561812984
+881234567812083
+881234567812183
+
+注：（只需要IMEI号，一号一行，前后都不要空格，字体大小格式统一，可将IMEI号拷贝到记事本去掉格式，不符合要求者不予添加IMEI号）

@@ -734,6 +734,20 @@ makeVendorOtaFile "F";
 function copyDocAndTools(){
 	cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/;
 	cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/update_tools ./
+
+	echo "make hota readme file begin" 
+        local CDATE=`date '+%Y\\.%m\\.%d %H\\:%M'`
+        
+	cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/README.txt ./
+	sed -i "s/\$VERSION_LOW/${PREVIOUS_VERSION}/g" README.txt
+	sed -i "s/\$VERSION_HEIGHT/${FOLDER_NAME_PRE}${FINAL_VERSION}/g" README.txt
+
+	sed -i "s/\$INTERNAL_VERSION_LOW/${PREVIOUS_VERSION}/g" README.txt
+	sed -i "s/\$INTERNAL_VERSION_HEIGHT/${FOLDER_NAME_PRE}${INTERNAL_VERSION}/g" README.txt
+
+	sed -i "s/\$DEVICE_NAME/HUAWEI ${HWV_PROJECT_NAME}/g" README.txt
+	sed -i "s/\$CURRENT_DATE/${CDATE}/g" README.txt
+	echo "make hota readme file finish"
 	
 	#HePJ: Because every project has diffrent doc names, so the code below has no sense
 	#cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/DOC ./
@@ -743,6 +757,8 @@ function copyDocAndTools(){
 }
 copyDocAndTools;
 
+
+
 if [ "T" = "$NEED_CHANGE_DIR_NAME" ];then
 	cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/;
 	
@@ -751,11 +767,13 @@ if [ "T" = "$NEED_CHANGE_DIR_NAME" ];then
 	SDCARD_UPDATE_FOLDER_NAME="SD卡升级软件包"
 	USB_UPDATE_FOLDER_NAME="USB升级软件包"
 	UPDATE_TOOLS_FOLDER_NAME="升级工具及指导"
+	HOAT_README="HOTA说明文件.txt"
 
 	mv -f $OTA_UPDATE_DIR "$OTA_UPDATE_FOLDER_NAME"
 	mv -f $SDCARD_UPDATE "$SDCARD_UPDATE_FOLDER_NAME"
 	mv -f $USB_UPDATE "$USB_UPDATE_FOLDER_NAME"
 	mv -f update_tools "$UPDATE_TOOLS_FOLDER_NAME"
+	mv -f README.txt "$HOAT_README"
 fi
 
 # send hoat middle file to ftp service to backup
