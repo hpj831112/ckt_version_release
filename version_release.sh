@@ -184,6 +184,7 @@ CKT_HOME=`pwd`
 CKT_HOME_OUT_PROJECT=${CKT_HOME}"/out/target/product/$PROJECT_NAME"
 CKT_HOME_MTK_MODEM=${CKT_HOME}"/mediatek/custom/common/modem"
 PROJECT_CONFIG_FILE="$CKT_HOME/mediatek/config/$PROJECT_NAME/ProjectConfig.mk"
+BUILD_PROP_FILE=${CKT_HOME}"/out/target/product/$PROJECT_NAME/system/build.prop"
 
 #make ota different split package saved dir
 FINAL_PACKAGE_SAVE_DIR_T=`sed -n '/^FINAL_PACKAGE_SAVE_DIR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
@@ -281,6 +282,12 @@ function getLastVersion(){
 	if [ -z "$OCV" ] || [ "$OCV" = "default" ] || [ "$OCV" = "d" ] || [ "$OCV" = "dflt" ]; then
 		local T=`echo $FINAL_VERSION|tr -cd '[0-9\n]'`
 		local N=`expr $T \- 1`
+
+		# if is custom the default version maybe 100 less than current version
+		if [ "T" = "$IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION" ]; then
+			N=`expr $T \- 100`
+		fi
+
 		local S=`echo $N|awk '{printf "%03s\n" ,$0}'` #add '0' if length less than 3 at left
 		local V_T=${FINAL_VERSION/$T/$S}
 	
@@ -745,15 +752,26 @@ function copyDocAndTools(){
 	sed -i "s/\$INTERNAL_VERSION_LOW/${PREVIOUS_VERSION}/g" README.txt
 	sed -i "s/\$INTERNAL_VERSION_HEIGHT/${FOLDER_NAME_PRE}${INTERNAL_VERSION}/g" README.txt
 
-	sed -i "s/\$DEVICE_NAME/HUAWEI ${HWV_PROJECT_NAME}/g" README.txt
+	local DEVICE_NAME=`sed -n '/^ro.product.model/p' "$BUILD_PROP_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+
+	sed -i "s/\$DEVICE_NAME/$DEVICE_NAME/g" README.txt
 	sed -i "s/\$CURRENT_DATE/${CDATE}/g" README.txt
 	echo "make hota readme file finish"
 	
-	#HePJ: Because every project has diffrent doc names, so the code below has no sense
-	#cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/DOC ./
-	#cd DOC
-	#rename "s/VERSION_NAME/${FOLDER_NAME_PRE}${VERSION}/" *
-	#rename "s/PROJECT_NAME/$HWV_PROJECT_NAME/" *
+	local DOC_SAVE_DIR=`sed -n '/^DOC_SAVE_DIR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
+
+	local DOC=""
+	if [ "$HWV_CUSTOM_VERSION" = "C00" ]; then
+	       DOC="$DOC_SAVE_DIR/${HWV_PROJECT_NAME}_DOC"
+	else
+	       DOC="$DOC_SAVE_DIR/${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}_DOC"
+	fi
+
+	if [ -d "$DOC" ]; then
+		cp -rf $DOC ./DOC
+		cd DOC
+		rename "s/$PREVIOUS_VERSION/$FINAL_VERSION/" *
+	fi
 }
 copyDocAndTools;
 
