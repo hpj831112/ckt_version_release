@@ -67,8 +67,8 @@ cd -
 
 function checkCommandExc(){
 	if [ $? -ne 0 ];then
-	  echo -e "\033[49;31;5m There has some errors during the command executing, please check it! The program will exit! \033[0m EXIT"
-          exit 1;
+		echo -e "\033[49;31;5m There has some errors during the command executing, please check it! The program will exit! \033[0m EXIT"
+        exit 1;
 	fi
 }
 
@@ -139,21 +139,21 @@ while getopts ":p:t:v:i:z:o:l:hmnwxRIBS" opt; do
        \x ) IS_ONLY_MAKE_PACHAGE="y"
             ;;
        \I ) IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION="T"
-	;;
+			;;
        \R ) NEED_CHANGE_DIR_NAME="T"
             ;;
        \B ) IS_SEND_BACKUP_FILE_TO_SERVICE="T"
-	    ;;
+	    	;;
        \? ) echo $USAGE 
-	    IS_SHOW_COPYRIGHT="F"
+	    	IS_SHOW_COPYRIGHT="F"
             exit 1 
             ;;
        \h ) showHelpInfo
-	    IS_SHOW_COPYRIGHT="F"
+	    	IS_SHOW_COPYRIGHT="F"
             exit 1 
             ;;
        \S ) showReadme
-	    IS_SHOW_COPYRIGHT="F"
+	    	IS_SHOW_COPYRIGHT="F"
             exit 1 
             ;;
     esac
@@ -192,12 +192,29 @@ checkCommandExc;
 
 FINAL_PACKAGE_SAVE_DIR=${FINAL_PACKAGE_SAVE_DIR_T#*=}
 if [ ! -d "$FINAL_PACKAGE_SAVE_DIR" ]; then 
-        echo -e "The final files save dir is not exist, now begin to make it! Please remenber the folder name \033[49;34;5m $FINAL_PACKAGE_SAVE_DIR \033[0m "
+	echo -e "The final files save dir is not exist, now begin to make it! Please remenber the folder name \033[49;34;5m $FINAL_PACKAGE_SAVE_DIR \033[0m "
 	mkdir -p "$FINAL_PACKAGE_SAVE_DIR" 
 fi 
 
 VENDOR_T=`sed -n '/^VENDOR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
 VENDOR=${VENDOR_T#*=}
+
+# get default options
+ARRY_DEFAUIT_OPTIONS_T=`sed -n '/^ARRY_DEFAUIT_OPTIONS/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'`;
+eval "$ARRY_DEFAUIT_OPTIONS_T"
+for i in "${ARRY_DEFAUIT_OPTIONS[@]}"; do 
+     case $i in
+        w ) IS_MAKE_HUAWEI_OTA_PACKAGE="F"
+            ;;
+        I ) IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION="T"
+	    ;;
+        R ) NEED_CHANGE_DIR_NAME="T"
+            ;;
+        B ) IS_SEND_BACKUP_FILE_TO_SERVICE="T"
+	    ;;
+     esac
+done 
+checkCommandExc;
 
 #get version param
 FOLDER_NAME_PRE=""
@@ -208,22 +225,22 @@ HWV_CUSTOM_VERSION=""
 function getVersionParam(){
 	#read version control
 	local HWV_PROJECT_NAME_T=`sed -n '/^HWV_PROJECT_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-        checkCommandExc;
+    checkCommandExc;
 
 	local HWV_VERSION_NAME_T=`sed -n '/^HWV_VERSION_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-        checkCommandExc;
+    checkCommandExc;
 
 	local HWV_RELEASE_NAME_T=`sed -n '/^HWV_RELEASE_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-        checkCommandExc;
+    checkCommandExc;
 
 	local HWV_CUSTOM_VERSION_T=`sed -n '/^HWV_CUSTOM_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-        checkCommandExc;
+    checkCommandExc;
 
 	local HWV_BUILDINTERNAL_VERSION_T=`sed -n '/^HWV_BUILDINTERNAL_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-        checkCommandExc;
+    checkCommandExc;
 
 	local HWV_BUILD_VERSION_T=`sed -n '/^HWV_BUILD_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-        checkCommandExc;
+    checkCommandExc;
 
 
 	HWV_PROJECT_NAME=${HWV_PROJECT_NAME_T#*=}
@@ -231,14 +248,14 @@ function getVersionParam(){
 	local HWV_RELEASE_NAME=${HWV_RELEASE_NAME_T#*=}
 	HWV_CUSTOM_VERSION=${HWV_CUSTOM_VERSION_T#*=}
 	HWV_BUILD_VERSION=${HWV_BUILD_VERSION_T#*=}
-        HWV_BUILDINTERNAL_VERSION=${HWV_BUILDINTERNAL_VERSION_T#*=}
+    HWV_BUILDINTERNAL_VERSION=${HWV_BUILDINTERNAL_VERSION_T#*=}
 
 	if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ];then
 		VERSION=$HWV_BUILD_VERSION
 		INTERNAL_VERSION=$HWV_BUILDINTERNAL_VERSION
 	fi
 
-        FOLDER_NAME_PRE=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION
+    FOLDER_NAME_PRE=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION
 }
 
 getVersionParam;
@@ -313,7 +330,7 @@ function tipUserInputLastVersion(){
 	else
 
 		local OCV=`echo $OTA_COMPARED_VERSION|tr '[:upper:]' '[:lower:]'`
-                if [ "$OCV" = "default" ] || [ "$OCV" = "d" ] || [ "$OCV" = "dflt" ]; then
+        if [ "$OCV" = "default" ] || [ "$OCV" = "d" ] || [ "$OCV" = "dflt" ]; then
 			OTA_COMPARED_VERSION=`getLastVersion`
 		fi
 	fi
@@ -333,10 +350,10 @@ if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T"
 	read -e -p "Enter The Compare Version's Package Name(For Us To Make Ota Different Package):" -i "${SHORT_PROJECT_NAME}_${V_T}"_"${TARGET_BUILD_VARIANT}.zip" NAME
 	echo -e "\033[0m"
 
-        if [ -z "$NAME" ] ;then
+    if [ -z "$NAME" ] ;then
 	    fShowMenu;
-        else
-            OTA_COMPARED_VERSION_PACKAGE_NAME=$NAME
+    else
+        OTA_COMPARED_VERSION_PACKAGE_NAME=$NAME
 	fi
 fi
 
@@ -358,12 +375,12 @@ if [ ! "$confirm" = 'y' ] ;then
 else
     if [ $VERSION != $HWV_BUILD_VERSION ] ;then   
 	sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
-        checkCommandExc;
+    checkCommandExc;
     fi
 
     if [ $INTERNAL_VERSION != $HWV_BUILDINTERNAL_VERSION ] ;then   
 	sed -i "s/HWV_BUILDINTERNAL_VERSION \= $HWV_BUILDINTERNAL_VERSION/HWV_BUILDINTERNAL_VERSION \= $INTERNAL_VERSION/g" "$PROJECT_CONFIG_FILE"
-        checkCommandExc;
+    checkCommandExc;
     fi
 fi
 
@@ -375,7 +392,7 @@ function cleanDust(){
 	
 	rm -rf $CKT_HOME/out
 	rm -rf $CKT_HOME/ckt/*.zip
-        rm -rf $CKT_HOME/ckt/.bin
+    rm -rf $CKT_HOME/ckt/.bin
 }
 
 function makeLog(){
@@ -401,7 +418,7 @@ if [ "$IS_ONLY_MAKE_PACHAGE" = "n" ] ;then
            checkCommandExc;
 	elif [ "$TARGET_BUILD_VARIANT" = 'eng' ] ;then
 	   ${CKT_HOME}/mk $PROJECT_NAME new
-           checkCommandExc;
+       checkCommandExc;
 
 	   ${CKT_HOME}/mk $PROJECT_NAME otapackage
 	   checkCommandExc;
@@ -508,8 +525,8 @@ lftp $FTP_URL<< EOF
 	cd Y320U_EMMC;
 	cd HOAT中间文件;
 	cd $FTP_FOLDER_NAME;
-        get $OTA_COMPARED_VERSION_PACKAGE_NAME;
-        bye;
+	get $OTA_COMPARED_VERSION_PACKAGE_NAME;
+    bye;
 EOF
 }
 
@@ -522,7 +539,7 @@ mkdir -p ./$FOLDER_NAME/$OTA_UPDATE_DIR
 if [ -f "$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
 	cp -f $OTA_COMPARED_VERSION_PACKAGE_NAME ./$FOLDER_NAME/$OTA_UPDATE_DIR
 else
-   cd $FOLDER_NAME/$OTA_UPDATE_DIR
+	cd $FOLDER_NAME/$OTA_UPDATE_DIR
 	getLastVersionPackage;
 	cd -
 fi 
@@ -543,7 +560,7 @@ function makeUpdateOtaPackageName(){
 	local V_N=`echo $FINAL_VERSION|tr '[:upper:]' '[:lower:]'` 
         local V=""
         local OCV=`echo $OTA_COMPARED_VERSION|tr '[:upper:]' '[:lower:]'`
-        if [ "$OCV" = "default" ] || [ "$OCV" = "d" ] || [ "$OCV" = "dflt" ]; then
+    if [ "$OCV" = "default" ] || [ "$OCV" = "d" ] || [ "$OCV" = "dflt" ]; then
 		local V_T=`getLastVersion`
 
 		PREVIOUS_VERSION=${FOLDER_NAME_PRE}${V_T}
@@ -719,7 +736,7 @@ function makeVendorOtaFile() {
 
 if [ "$IS_MAKE_HUAWEI_OTA_PACKAGE" = "F" ]; then
 	echo "Ota different split package is maked completed, there has no more task to do, the tools will exit!"
-        exit
+    exit
 fi
 
 #make vendor ota file
@@ -743,7 +760,7 @@ function copyDocAndTools(){
 	cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/update_tools ./
 
 	echo "make hota readme file begin" 
-        local CDATE=`date '+%Y\\.%m\\.%d %H\\:%M'`
+    local CDATE=`date '+%Y\\.%m\\.%d %H\\:%M'`
         
 	cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/README.txt ./
 	sed -i "s/\$VERSION_LOW/${PREVIOUS_VERSION}/g" README.txt
@@ -762,9 +779,9 @@ function copyDocAndTools(){
 
 	local DOC=""
 	if [ "$HWV_CUSTOM_VERSION" = "C00" ]; then
-	       DOC="$DOC_SAVE_DIR/${HWV_PROJECT_NAME}_DOC"
+		DOC="$DOC_SAVE_DIR/${HWV_PROJECT_NAME}_DOC"
 	else
-	       DOC="$DOC_SAVE_DIR/${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}_DOC"
+		DOC="$DOC_SAVE_DIR/${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}_DOC"
 	fi
 
 	if [ -d "$DOC" ]; then
@@ -804,8 +821,8 @@ lftp $FTP_URL<< EOF
 	cd Y320U_EMMC;
 	cd HOAT中间文件;
 	cd $FTP_FOLDER_NAME;
-        mput *.zip;
-        bye;
+    mput *.zip;
+    bye;
 EOF
 fi
 
