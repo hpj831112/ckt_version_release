@@ -570,7 +570,7 @@ function makeUpdateOtaPackageName(){
 		V=`echo $OTA_COMPARED_VERSION|tr '[:upper:]' '[:lower:]'`
 	fi
         
-        UPDATE_OTA_PACKAGE_NAME=${SHORT_PROJECT_NAME}_${V}"--"${V_N}"_"${TARGET_BUILD_VARIANT}".zip"
+    UPDATE_OTA_PACKAGE_NAME=${SHORT_PROJECT_NAME}_${V}"--"${V_N}"_"${TARGET_BUILD_VARIANT}".zip"
 	UPDATE_OTA_PACKAGE_NAME_VALIDATE=${SHORT_PROJECT_NAME}"_"${V_N}"--"${V}"_"${TARGET_BUILD_VARIANT}".zip"
 }
 
@@ -601,7 +601,8 @@ else
 	mv -f $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME ./
 fi
 
-FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=${SHORT_PROJECT_NAME}"_"${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}".zip"
+TEMP_V=`echo $FINAL_VERSION|tr '[:lower:]' '[:upper:]'`
+FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=${SHORT_PROJECT_NAME}"_"${TEMP_V}"_"${TARGET_BUILD_VARIANT}".zip"
 cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/$FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
 checkCommandExc;
 
@@ -792,8 +793,7 @@ function copyDocAndTools(){
 }
 copyDocAndTools;
 
-
-
+#if you shell environment support chinese characters, you can go config.con, set the [-R] option default on
 if [ "T" = "$NEED_CHANGE_DIR_NAME" ];then
 	cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/;
 	
@@ -821,7 +821,7 @@ lftp $FTP_URL<< EOF
 	cd Y320U_EMMC;
 	cd HOAT中间文件;
 	cd $FTP_FOLDER_NAME;
-    mput *.zip;
+    mput $FTP_BACKUP_HOAT_MIDDLE_FILE_NAME;
     bye;
 EOF
 fi
