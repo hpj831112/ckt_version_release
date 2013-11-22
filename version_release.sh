@@ -73,6 +73,9 @@ IS_MAKE_ENG_BOOT_IMG="F"
 #demain if dill with base version specialLy
 IS_BASE_VERSION_SPECIALLY="T"
 
+#demain every configration is keep the default
+IS_KEEP_DEFAULT_CONFIG="F"
+
 function getConfigFile(){
 	cd /sbin
 	local VERSION_RELEASE_HOME_T=`readlink ckt_release`
@@ -131,7 +134,7 @@ function showReadme(){
 }
 
 #read user input options
-while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPX" opt; do
+while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXD" opt; do
 	case $opt in
 	    p ) PROJECT_NAME=$OPTARG 
 	        ;;
@@ -170,6 +173,8 @@ while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPX" opt; do
 	   \K ) IS_EXTERNAL_VERSION_LOCAKED="T"
 			;;
 	   \X ) IS_MAKE_FILE="N"
+			;;
+	   \D ) IS_KEEP_DEFAULT_CONFIG="T"
 			;;
 	   \? ) echo $USAGE 
 			IS_SHOW_COPYRIGHT="F"
@@ -217,7 +222,7 @@ function showCopyright(){
 } 
 showCopyright;
 
-if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || [ "$1" = "-E" ] || [ "$1" = "-X" ]; then
+if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || [ "$1" = "-E" ] || [ "$1" = "-X" ] || [ "$1" = "-D" ]; then
    fShowMenu;
    IS_MENU_SHOW="T"
 fi
@@ -288,6 +293,8 @@ function getDefaultOption(){
 				;;
 			X ) IS_MAKE_FILE="N"
 				;;
+			D ) IS_KEEP_DEFAULT_CONFIG="T"
+				;;
 		 esac
 	done 
 	checkCommandExc;
@@ -328,7 +335,7 @@ function getVersionParam(){
 	HWV_BUILD_VERSION=${HWV_BUILD_VERSION_T#*=}
     HWV_BUILDINTERNAL_VERSION=${HWV_BUILDINTERNAL_VERSION_T#*=}
 
-	if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ];then
+	if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ] ||  [ "T" = "$IS_KEEP_DEFAULT_CONFIG" ];then
 		VERSION=$HWV_BUILD_VERSION
 		INTERNAL_VERSION=$HWV_BUILDINTERNAL_VERSION
 	fi
@@ -371,14 +378,22 @@ function makeVersion(){
 		fi
 	fi
 
-	if [ "T" = "$IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION" ];then
+	#if [ "T" = "$IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION" ];then
 		FINAL_VERSION=$INTERNAL_VERSION
-	else
-		FINAL_VERSION=$VERSION
-	fi
+	#else
+		#FINAL_VERSION=$VERSION
+	#fi
 }
 
-makeVersion;
+if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
+	makeVersion;
+else
+	#if [ "T" = "$IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION" ];then
+		FINAL_VERSION=$INTERNAL_VERSION
+	#else
+		#FINAL_VERSION=$VERSION
+	#fi
+fi
 
 function getLastVersion(){
 	local OCV=`echo $OTA_COMPARED_VERSION|tr '[:upper:]' '[:lower:]'`
@@ -420,9 +435,14 @@ function tipUserInputLastVersion(){
 		fi
 	fi
 }
-tipUserInputLastVersion;
 
-function tipsUserInputComparedVersion(){
+if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
+	tipUserInputLastVersion;
+else
+	OTA_COMPARED_VERSION=`getLastVersion`
+fi
+
+function makeDeafaultComparedVersion(){
 	if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T" ] && [ "$IS_ONLY_BUILD" = "F" ];then
 		local SHORT_PROJECT_NAME_T=${HWV_PROJECT_NAME#*-}
 		SHORT_PROJECT_NAME=`echo $SHORT_PROJECT_NAME_T|tr '[:upper:]' '[:lower:]'`
@@ -436,24 +456,35 @@ function tipsUserInputComparedVersion(){
 		   CMPR_VSN_NM="${SHORT_PROJECT_NAME}_${HW_CST_VSN}_${V_T}"_"${TARGET_BUILD_VARIANT}.zip"
 	    fi
 
-		local TIPS_MSG="Enter The Package Name of The Compare Version(For Us To Make Ota Different Package):"
+		echo $CMPR_VSN_NM
+	fi
+}
 
-		echo -e "\033[49;36;1m"
-		read -e -p "$TIPS_MSG" -i "$CMPR_VSN_NM" NAME
-		echo -e "\033[0m"
+function tipsUserInputComparedVersion(){
+	CMPR_VSN_NM=`makeDeafaultComparedVersion`
 
-		if [ -z "$NAME" ] ;then
-			fShowMenu;
-		else
-		    OTA_COMPARED_VERSION_PACKAGE_NAME=$NAME
-		fi
+	local TIPS_MSG="Enter The Package Name of The Compare Version(For Us To Make Ota Different Package):"
+
+	echo -e "\033[49;36;1m"
+	read -e -p "$TIPS_MSG" -i "$CMPR_VSN_NM" NAME
+	echo -e "\033[0m"
+
+	if [ -z "$NAME" ] ;then
+		fShowMenu;
+	else
+	    OTA_COMPARED_VERSION_PACKAGE_NAME=$NAME
 	fi
 
 	FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}
 }
 
 #get last version package name for make ota differnt split package
-tipsUserInputComparedVersion;
+if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
+	tipsUserInputComparedVersion;
+else
+	OTA_COMPARED_VERSION_PACKAGE_NAME=`makeDeafaultComparedVersion`;
+    FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT};
+fi
 
 function doConfirm(){
 	echo -e "Please confirm the build information:"
@@ -463,6 +494,7 @@ function doConfirm(){
 	echo -e "\t Internal Version:\033[49;31;5m "${INTERNAL_VERSION}"\033[0m "
 	echo -e "\t The final package folder name:\033[49;31;5m "${FOLDER_NAME}"\033[0m "
 	echo -e "\t Is only make package:\033[49;31;5m "${IS_ONLY_MAKE_PACHAGE}"\033[0m "
+	echo -e "\t Compared version:\033[49;31;5m "${OTA_COMPARED_VERSION}"\033[0m "
 	echo -e "\t Last version package name:\033[49;31;5m "${OTA_COMPARED_VERSION_PACKAGE_NAME}"\033[0m "
 	echo -e "\t it's correctly(y/n): \c "
 	read confirm
@@ -740,8 +772,8 @@ function makeUpdateOtaPrama(){
 	SHORT_PROJECT_NAME=`echo $SHORT_PROJECT_NAME_T|tr '[:upper:]' '[:lower:]'`
 
 	local V_N=`echo $FINAL_VERSION|tr '[:upper:]' '[:lower:]'` 
-        local V=""
-        local OCV=`echo $OTA_COMPARED_VERSION|tr '[:upper:]' '[:lower:]'`
+    local V=""
+    local OCV=`echo $OTA_COMPARED_VERSION|tr '[:upper:]' '[:lower:]'`
     if [ "$OCV" = "default" ] || [ "$OCV" = "d" ] || [ "$OCV" = "dflt" ]; then
 		local V_T=`getLastVersion`
 
