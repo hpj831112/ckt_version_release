@@ -172,7 +172,7 @@ while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXD" opt; do
 			;;
 	   \K ) IS_EXTERNAL_VERSION_LOCAKED="T"
 			;;
-	   \X ) IS_MAKE_FILE="N"
+	   \X ) IS_MAKE_FILE="F"
 			;;
 	   \D ) IS_KEEP_DEFAULT_CONFIG="T"
 			;;
@@ -291,7 +291,7 @@ function getDefaultOption(){
 				;;
 			K ) IS_EXTERNAL_VERSION_LOCAKED="T"
 				;;
-			X ) IS_MAKE_FILE="N"
+			X ) IS_MAKE_FILE="F"
 				;;
 			D ) IS_KEEP_DEFAULT_CONFIG="T"
 				;;
@@ -385,8 +385,14 @@ function makeVersion(){
 	#fi
 }
 
-if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ] && [ "F" = "$IS_MAKE_FILE" ] ;then
-	makeVersion;
+if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
+    if [ "T" = "$IS_MAKE_FILE" ]; then
+	    makeVersion;
+	else
+	    VERSION=$HWV_BUILD_VERSION
+		INTERNAL_VERSION=$HWV_BUILDINTERNAL_VERSION
+		FINAL_VERSION=$INTERNAL_VERSION
+	fi
 else
 	#if [ "T" = "$IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION" ];then
 		VERSION=$HWV_BUILD_VERSION
@@ -438,8 +444,10 @@ function tipUserInputLastVersion(){
 	fi
 }
 
-if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ] && [ "F" = "$IS_MAKE_FILE" ] ;then
-	tipUserInputLastVersion;
+if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
+    if [ "T" = "$IS_MAKE_FILE" ]; then
+	    tipUserInputLastVersion;
+	fi
 else
 	OTA_COMPARED_VERSION=`getLastVersion`
 fi
@@ -482,7 +490,9 @@ function tipsUserInputComparedVersion(){
 
 #get last version package name for make ota differnt split package
 if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ] ||  [ "T" = "$IS_KEEP_DEFAULT_CONFIG" ];then
-	tipsUserInputComparedVersion;
+    if [ "T" = "$IS_MAKE_FILE" ]; then
+	    tipsUserInputComparedVersion;
+	fi
 else
 	OTA_COMPARED_VERSION_PACKAGE_NAME=`makeDeafaultComparedVersion`;
     FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT};
