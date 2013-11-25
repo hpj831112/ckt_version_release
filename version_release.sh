@@ -385,10 +385,12 @@ function makeVersion(){
 	#fi
 }
 
-if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
+if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ] && [ "F" = "$IS_MAKE_FILE" ] ;then
 	makeVersion;
 else
 	#if [ "T" = "$IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION" ];then
+		VERSION=$HWV_BUILD_VERSION
+		INTERNAL_VERSION=$HWV_BUILDINTERNAL_VERSION
 		FINAL_VERSION=$INTERNAL_VERSION
 	#else
 		#FINAL_VERSION=$VERSION
@@ -436,7 +438,7 @@ function tipUserInputLastVersion(){
 	fi
 }
 
-if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
+if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ] && [ "F" = "$IS_MAKE_FILE" ] ;then
 	tipUserInputLastVersion;
 else
 	OTA_COMPARED_VERSION=`getLastVersion`
@@ -479,7 +481,7 @@ function tipsUserInputComparedVersion(){
 }
 
 #get last version package name for make ota differnt split package
-if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
+if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ] ||  [ "T" = "$IS_KEEP_DEFAULT_CONFIG" ];then
 	tipsUserInputComparedVersion;
 else
 	OTA_COMPARED_VERSION_PACKAGE_NAME=`makeDeafaultComparedVersion`;
@@ -882,7 +884,7 @@ function makeVendorOtaFile() {
 		log4line "begin to make vendor ota file..."
 		log4model;
 
-        VSN="$FOLDER_NAME_PRE$VERSION"
+        VSN="$FOLDER_NAME_PRE$FINAL_VERSION"
         FTS="$PREVIOUS_VERSION to ${FOLDER_NAME_PRE}${FINAL_VERSION}"
         SPTH="$HUAWEI_OTA_PACKAGE_NAME"
         DPTH="$HUAWEI_OTA_PACKAGE_NAME"
