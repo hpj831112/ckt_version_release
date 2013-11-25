@@ -256,8 +256,10 @@ function makeSaveDirAndGetVendor(){
 	checkCommandExc;
 
 	FINAL_PACKAGE_SAVE_DIR=${FINAL_PACKAGE_SAVE_DIR_T#*=}
-	if [ ! -d "$FINAL_PACKAGE_SAVE_DIR" ]; then 
-		mkdir -p "$FINAL_PACKAGE_SAVE_DIR" 
+	if [ ! -d "$FINAL_PACKAGE_SAVE_DIR" ]; then
+        echo -e "\033[49;34;5m $FINAL_PACKAGE_SAVE_DIR \033[0m \033[49;31;5m is not exist, the tool will help you make it, please remenber it!"	
+        echo -e " Then, if the dir name on FTP sever is not regulatory, please copy the HOTA package to the root of this dir! \033[0m "			
+		mkdir -p "$FINAL_PACKAGE_SAVE_DIR"
 	fi 
 
 	local VENDOR_T=`sed -n '/^VENDOR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
