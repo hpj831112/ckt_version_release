@@ -1,7 +1,7 @@
 
     If you're a newcomer, we strongly suggest you use the menu to guid you to use this tool.
 
-    Usage: ckt_release [-p] [-t] [-v] [-i] [-z] [-o] [-l] [-w|-R|-I|-B|-E]
+    Usage: ckt_release [-p] [-t] [-v] [-i] [-z] [-o] [-l] [-w|-R|-I|-B|-E|-K|-F|-L|-D]
 	
     [-p]: project name,eg：ckt_we_jb3. 
           If you don't have any input, 'ckt_we_jb3' will be the default
@@ -49,6 +49,25 @@
 	[-E]: open make eng boot img function. Please use this option carefully, 
           because if do so, the sdcard update file will be deleted in out dir. 
           eg: ckt_release -x -E
+		  
+	[-F]: used to make first release version.
+          eg: ckt_release -E
+		  
+	[-L]: local FTP backup. If there has a local FTP sever on your local widows
+          machine, you can use this option to backup the release package to it. 
+          eg: ckt_release -L
+		  
+	[-X]: used to make usb update software package. If the command take this option
+          the tool will only help user to make usb update software package. 
+          eg: ckt_release -X
+		  
+	[-K]: when the external version is locked, you must keep this option on. If you
+          do not take this option the version has a mistake. 
+          eg: ckt_release -E -K	 
+
+    [-D]: keep every option default. When take this option every option required
+	      you input will keep the default value
+          eg: ckt_release -D	 		  
 
     [-?]: show usage
 
