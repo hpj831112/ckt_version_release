@@ -37,10 +37,8 @@ IS_EXTERNAL_VERSION_LOCAKED="F"
 
 IS_MAKE_FILE="T"
 
-IS_FIRST_RELEASE="F"
-
 #user introduction
-USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-i internal_version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w not_make_vendor_ota_package] [-R change_dir_name_to_chinese] [-I final_folder_name's_version_based_on_internal_versuon] [-B open_ftp_backup_function] [-E make_eng_bootimg] [-L local_backup] [-K is_external_version_locked] [-X not_call_mk] [-F first_release] [-? show_this_message]"
+USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-i internal_version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w not_make_vendor_ota_package] [-R change_dir_name_to_chinese] [-I final_folder_name's_version_based_on_internal_versuon] [-B open_ftp_backup_function] [-E make_eng_bootimg] [-L local_backup] [-K is_external_version_locked] [-X not_call_mk] [-? show_this_message]"
 
 #option count
 OPTION_COUNT=$#
@@ -136,7 +134,7 @@ function showReadme(){
 }
 
 #read user input options
-while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXDF" opt; do
+while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXD" opt; do
 	case $opt in
 	    p ) PROJECT_NAME=$OPTARG 
 	        ;;
@@ -175,11 +173,8 @@ while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXDF" opt; do
 	   \K ) IS_EXTERNAL_VERSION_LOCAKED="T"
 			;;
 	   \X ) IS_MAKE_FILE="F"
-	        IS_MAKE_OTA_PACKAGE="F" 
 			;;
 	   \D ) IS_KEEP_DEFAULT_CONFIG="T"
-			;;
-	   \F ) IS_FIRST_RELEASE="T"
 			;;
 	   \? ) echo $USAGE 
 			IS_SHOW_COPYRIGHT="F"
@@ -227,7 +222,7 @@ function showCopyright(){
 } 
 showCopyright;
 
-if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || [ "$1" = "-E" ] || [ "$1" = "-X" ] || [ "$1" = "-D" ] || [ "$1" = "-F" ]; then
+if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || [ "$1" = "-E" ] || [ "$1" = "-X" ] || [ "$1" = "-D" ]; then
    fShowMenu;
    IS_MENU_SHOW="T"
 fi
@@ -299,7 +294,6 @@ function getDefaultOption(){
 			K ) IS_EXTERNAL_VERSION_LOCAKED="T"
 				;;
 			X ) IS_MAKE_FILE="F"
-			    IS_MAKE_OTA_PACKAGE="F" 
 				;;
 			D ) IS_KEEP_DEFAULT_CONFIG="T"
 				;;
@@ -454,9 +448,7 @@ function tipUserInputLastVersion(){
 
 if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
     if [ "T" = "$IS_MAKE_FILE" ]; then
-		if [ "F" = "$IS_FIRST_RELEASE" ]; then
-			tipUserInputLastVersion;
-		fi
+	    tipUserInputLastVersion;
 	fi
 else
 	OTA_COMPARED_VERSION=`getLastVersion`
@@ -501,9 +493,7 @@ function tipsUserInputComparedVersion(){
 #get last version package name for make ota differnt split package
 if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ] ||  [ "T" = "$IS_KEEP_DEFAULT_CONFIG" ];then
     if [ "T" = "$IS_MAKE_FILE" ]; then
-	    if [ "F" = "$IS_FIRST_RELEASE" ]; then
-			tipsUserInputComparedVersion;
-		fi
+	    tipsUserInputComparedVersion;
 	fi
 else
 	OTA_COMPARED_VERSION_PACKAGE_NAME=`makeDeafaultComparedVersion`;
@@ -518,12 +508,8 @@ function doConfirm(){
 	echo -e "\t Internal Version:\033[49;31;5m "${INTERNAL_VERSION}"\033[0m "
 	echo -e "\t The final package folder name:\033[49;31;5m "${FOLDER_NAME}"\033[0m "
 	echo -e "\t Is only make package:\033[49;31;5m "${IS_ONLY_MAKE_PACHAGE}"\033[0m "
-	
-	if [ "F" = "$IS_FIRST_RELEASE" ]; then
-		echo -e "\t Compared version:\033[49;31;5m "${OTA_COMPARED_VERSION}"\033[0m "
-		echo -e "\t Last version package name:\033[49;31;5m "${OTA_COMPARED_VERSION_PACKAGE_NAME}"\033[0m "
-	fi
-	
+	echo -e "\t Compared version:\033[49;31;5m "${OTA_COMPARED_VERSION}"\033[0m "
+	echo -e "\t Last version package name:\033[49;31;5m "${OTA_COMPARED_VERSION_PACKAGE_NAME}"\033[0m "
 	echo -e "\t it's correctly(y/n): \c "
 	read confirm
 
@@ -599,11 +585,9 @@ README_FILE_NAME=""
 function getFolderParam(){
 	DOCUMENT_FOLDER_NAME=`sed -n '/^DOCUMENT_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
 	checkCommandExc;
-	
-    if [ "F" = "$IS_FIRST_RELEASE" ]; then
-		OTA_UPDATE_DIR=`sed -n '/^MIDDLE_HOTA_UPDATE_SOFTWARE_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
-		checkCommandExc;
-	fi
+
+	OTA_UPDATE_DIR=`sed -n '/^MIDDLE_HOTA_UPDATE_SOFTWARE_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
+	checkCommandExc;
 
 	SDCARD_UPDATE=`sed -n '/^SD_CARD_SOFTWARE_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
 	checkCommandExc;
@@ -636,9 +620,7 @@ function makeFinalDir(){
 
 	cd $FOLDER_NAME
 	getFolderParam;
-	if [ "F" = "$IS_FIRST_RELEASE" ]; then
-		mkdir $OTA_UPDATE_DIR
-	fi
+	mkdir $OTA_UPDATE_DIR
 	mkdir $SDCARD_UPDATE
 	mkdir $USB_UPDATE
 
@@ -791,9 +773,7 @@ function getLastVersionPackage(){
 		checkCommandExc;
 	fi 
 }
-if [ "F" = "$IS_FIRST_RELEASE" ]; then
-	getLastVersionPackage;
-fi
+getLastVersionPackage;
 
 #make update ota package naem
 UPDATE_OTA_PACKAGE_NAME=""
@@ -824,9 +804,8 @@ function makeUpdateOtaPrama(){
 	OTA_DIFF_FILE=$FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$UPDATE_OTA_PACKAGE_NAME
 	OTA_DIFF_FILE_VALIDATE=$FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$UPDATE_OTA_PACKAGE_NAME_VALIDATE
 }
-if [ "F" = "$IS_FIRST_RELEASE" ]; then
-	makeUpdateOtaPrama;
-fi
+
+makeUpdateOtaPrama;
 
 function makeOtaPackage(){
 	cd $CKT_HOME
@@ -868,9 +847,7 @@ function makeOtaPackage(){
 	cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/$FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
 	checkCommandExc;
 }
-if [ "F" = "$IS_FIRST_RELEASE" ]; then
-	makeOtaPackage;
-fi
+makeOtaPackage;
 
 # defind vars for vendor ota package
 HUAWEI_OTA_PACKAGE_NAME=""
@@ -1016,42 +993,38 @@ function makeVendorOtaFile() {
 }
 
 #make vendor ota file
-if [ "F" = "$IS_FIRST_RELEASE" ]; then
-	readVendorOtaConfig;
+readVendorOtaConfig;
 
-	makeVendorOtaFile "T";
+makeVendorOtaFile "T";
 
-	makeVendorOtaFile "F";
-fi
+makeVendorOtaFile "F";
 
 function copyDocAndTools(){
 	cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/;
 	cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/update_tools ./$DOWLOAD_TOOLS_DRIVERS_FOLDER_NAME
 
-	if [ "F" = "$IS_FIRST_RELEASE" ]; then
-		echo "make hota readme file begin" 
-		local CDATE=`date '+%Y\\.%m\\.%d %H\\:%M'`
-			
-		cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/README.txt ./$README_FILE_NAME
+	echo "make hota readme file begin" 
+    local CDATE=`date '+%Y\\.%m\\.%d %H\\:%M'`
+        
+	cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/README.txt ./$README_FILE_NAME
 
-		if [ "T" = "$IS_EXTERNAL_VERSION_LOCKED" ]; then
-			local LOCKED_VERSION=${FOLDER_NAME_PRE}${VERSION}
-			sed -i "s/\$VERSION_LOW/$LOCKED_VERSION/g" $README_FILE_NAME
-			sed -i "s/\$VERSION_HEIGHT/$LOCKED_VERSION/g" $README_FILE_NAME
-		else
-			sed -i "s/\$VERSION_LOW/${PREVIOUS_VERSION}/g" $README_FILE_NAME
-			sed -i "s/\$VERSION_HEIGHT/${FOLDER_NAME_PRE}${FINAL_VERSION}/g" $README_FILE_NAME
-		fi
-
-		sed -i "s/\$INTERNAL_VERSION_LOW/${PREVIOUS_VERSION}/g" $README_FILE_NAME
-		sed -i "s/\$INTERNAL_VERSION_HEIGHT/${FOLDER_NAME_PRE}${INTERNAL_VERSION}/g" $README_FILE_NAME
-
-		local DEVICE_NAME=`sed -n '/^ro.product.model/p' "$BUILD_PROP_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
-
-		sed -i "s/\$DEVICE_NAME/$DEVICE_NAME/g" $README_FILE_NAME
-		sed -i "s/\$CURRENT_DATE/${CDATE}/g" $README_FILE_NAME
-		echo "make hota readme file finish"
+	if [ "T" = "$IS_EXTERNAL_VERSION_LOCKED" ]; then
+		local LOCKED_VERSION=${FOLDER_NAME_PRE}${VERSION}
+		sed -i "s/\$VERSION_LOW/$LOCKED_VERSION/g" $README_FILE_NAME
+		sed -i "s/\$VERSION_HEIGHT/$LOCKED_VERSION/g" $README_FILE_NAME
+	else
+		sed -i "s/\$VERSION_LOW/${PREVIOUS_VERSION}/g" $README_FILE_NAME
+		sed -i "s/\$VERSION_HEIGHT/${FOLDER_NAME_PRE}${FINAL_VERSION}/g" $README_FILE_NAME
 	fi
+
+	sed -i "s/\$INTERNAL_VERSION_LOW/${PREVIOUS_VERSION}/g" $README_FILE_NAME
+	sed -i "s/\$INTERNAL_VERSION_HEIGHT/${FOLDER_NAME_PRE}${INTERNAL_VERSION}/g" $README_FILE_NAME
+
+	local DEVICE_NAME=`sed -n '/^ro.product.model/p' "$BUILD_PROP_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+
+	sed -i "s/\$DEVICE_NAME/$DEVICE_NAME/g" $README_FILE_NAME
+	sed -i "s/\$CURRENT_DATE/${CDATE}/g" $README_FILE_NAME
+	echo "make hota readme file finish"
 	
 	local DOC_SAVE_DIR=`sed -n '/^DOC_SAVE_DIR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
 
@@ -1120,9 +1093,7 @@ function changeDirName2Chinese(){
 		local UPDATE_TOOLS_FOLDER_NAME="升级工具及指导"
 		local HOAT_README="HOTA说明文件.txt"
 
-		if [ "F" = "$IS_FIRST_RELEASE" ]; then
-			mv -f $OTA_UPDATE_DIR "$OTA_UPDATE_FOLDER_NAME"
-		fi
+		mv -f $OTA_UPDATE_DIR "$OTA_UPDATE_FOLDER_NAME"
 		mv -f $SDCARD_UPDATE "$SDCARD_UPDATE_FOLDER_NAME"
 		mv -f $USB_UPDATE "$USB_UPDATE_FOLDER_NAME"
 		mv -f $DOWLOAD_TOOLS_DRIVERS_FOLDER_NAME "$UPDATE_TOOLS_FOLDER_NAME"
