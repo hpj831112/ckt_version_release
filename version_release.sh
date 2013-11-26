@@ -37,8 +37,10 @@ IS_EXTERNAL_VERSION_LOCAKED="F"
 
 IS_MAKE_FILE="T"
 
+IS_FIRST_RELEASE="F"
+
 #user introduction
-USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-i internal_version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w not_make_vendor_ota_package] [-R change_dir_name_to_chinese] [-I final_folder_name's_version_based_on_internal_versuon] [-B open_ftp_backup_function] [-E make_eng_bootimg] [-L local_backup] [-K is_external_version_locked] [-X not_call_mk] [-? show_this_message]"
+USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-i internal_version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w not_make_vendor_ota_package] [-R change_dir_name_to_chinese] [-I final_folder_name's_version_based_on_internal_versuon] [-B open_ftp_backup_function] [-E make_eng_bootimg] [-L local_backup] [-K is_external_version_locked] [-X not_call_mk] [-F first_release] [-? show_this_message]"
 
 #option count
 OPTION_COUNT=$#
@@ -83,12 +85,12 @@ function getConfigFile(){
 	VERSION_RELEASE_CONFIG_FILE="$VERSION_RELEASE_SHELL_FOLDER/config.conf"
 	cd -
 }
-getConfigFile;
+getConfigFile
 
 function checkCommandExc(){
 	if [ $? -ne 0 ];then
 		echo -e "\033[49;31;5m There has some errors during the command executing, please check it! The program will exit! \033[0m EXIT"
-        exit 1;
+        exit 1
 	fi
 }
 
@@ -121,7 +123,7 @@ function fShowMenu(){
        TARGET_BUILD_VARIANT=${option4#*-}
     else
        echo "Sorry you must input the muber order of the option!"
-       fShowMenu;
+       fShowMenu
     fi
 }
 
@@ -134,7 +136,7 @@ function showReadme(){
 }
 
 #read user input options
-while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXD" opt; do
+while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXDF" opt; do
 	case $opt in
 	    p ) PROJECT_NAME=$OPTARG 
 	        ;;
@@ -173,8 +175,11 @@ while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXD" opt; do
 	   \K ) IS_EXTERNAL_VERSION_LOCAKED="T"
 			;;
 	   \X ) IS_MAKE_FILE="F"
+	        IS_MAKE_OTA_PACKAGE="F" 
 			;;
 	   \D ) IS_KEEP_DEFAULT_CONFIG="T"
+			;;
+	   \F ) IS_FIRST_RELEASE="T"
 			;;
 	   \? ) echo $USAGE 
 			IS_SHOW_COPYRIGHT="F"
@@ -220,10 +225,10 @@ function showCopyright(){
 		echo "*******************************************************************************************"
 	fi
 } 
-showCopyright;
+showCopyright
 
-if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || [ "$1" = "-E" ] || [ "$1" = "-X" ] || [ "$1" = "-D" ]; then
-   fShowMenu;
+if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || [ "$1" = "-E" ] || [ "$1" = "-X" ] || [ "$1" = "-D" ] || [ "$1" = "-F" ]; then
+   fShowMenu
    IS_MENU_SHOW="T"
 fi
 
@@ -252,8 +257,8 @@ SHORT_PROJECT_NAME=""
 
 #make ota different split package saved dir
 function makeSaveDirAndGetVendor(){
-	local FINAL_PACKAGE_SAVE_DIR_T=`sed -n '/^FINAL_PACKAGE_SAVE_DIR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-	checkCommandExc;
+	local FINAL_PACKAGE_SAVE_DIR_T=`sed -n '/^FINAL_PACKAGE_SAVE_DIR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+	checkCommandExc
 
 	FINAL_PACKAGE_SAVE_DIR=${FINAL_PACKAGE_SAVE_DIR_T#*=}
 	if [ ! -d "$FINAL_PACKAGE_SAVE_DIR" ]; then
@@ -262,16 +267,16 @@ function makeSaveDirAndGetVendor(){
 		mkdir -p "$FINAL_PACKAGE_SAVE_DIR"
 	fi 
 
-	local VENDOR_T=`sed -n '/^VENDOR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+	local VENDOR_T=`sed -n '/^VENDOR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
 	VENDOR=${VENDOR_T#*=}
 
-	BASE_CUSTOM_COD=`sed -n '/^BASE_CUSTOM_COD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
+	BASE_CUSTOM_COD=`sed -n '/^BASE_CUSTOM_COD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
 }
-makeSaveDirAndGetVendor;
+makeSaveDirAndGetVendor
 
 # get default options
 function getDefaultOption(){
-	ARRY_DEFAUIT_OPTIONS_T=`sed -n '/^ARRY_DEFAUIT_OPTIONS/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'`;
+	ARRY_DEFAUIT_OPTIONS_T=`sed -n '/^ARRY_DEFAUIT_OPTIONS/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'`
 
 	eval "$ARRY_DEFAUIT_OPTIONS_T"
 
@@ -294,14 +299,15 @@ function getDefaultOption(){
 			K ) IS_EXTERNAL_VERSION_LOCAKED="T"
 				;;
 			X ) IS_MAKE_FILE="F"
+			    IS_MAKE_OTA_PACKAGE="F" 
 				;;
 			D ) IS_KEEP_DEFAULT_CONFIG="T"
 				;;
 		 esac
 	done 
-	checkCommandExc;
+	checkCommandExc
 }
-getDefaultOption;
+getDefaultOption
 
 #get version param
 HWV_BUILD_VERSION=""
@@ -312,22 +318,22 @@ HWV_CUSTOM_VERSION=""
 function getVersionParam(){
 	#read version control
 	local HWV_PROJECT_NAME_T=`sed -n '/^HWV_PROJECT_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-    checkCommandExc;
+    checkCommandExc
 
 	local HWV_VERSION_NAME_T=`sed -n '/^HWV_VERSION_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-    checkCommandExc;
+    checkCommandExc
 
 	local HWV_RELEASE_NAME_T=`sed -n '/^HWV_RELEASE_NAME/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-    checkCommandExc;
+    checkCommandExc
 
 	local HWV_CUSTOM_VERSION_T=`sed -n '/^HWV_CUSTOM_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-    checkCommandExc;
+    checkCommandExc
 
 	local HWV_BUILDINTERNAL_VERSION_T=`sed -n '/^HWV_BUILDINTERNAL_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-    checkCommandExc;
+    checkCommandExc
 
 	local HWV_BUILD_VERSION_T=`sed -n '/^HWV_BUILD_VERSION/p' "$PROJECT_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-    checkCommandExc;
+    checkCommandExc
 
 
 	HWV_PROJECT_NAME=${HWV_PROJECT_NAME_T#*=}
@@ -345,7 +351,7 @@ function getVersionParam(){
     FOLDER_NAME_PRE=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION
 }
 
-getVersionParam;
+getVersionParam
 
 function makeVersion(){
 	#get external version
@@ -389,7 +395,7 @@ function makeVersion(){
 
 if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
     if [ "T" = "$IS_MAKE_FILE" ]; then
-	    makeVersion;
+	    makeVersion
 	else
 	    VERSION=$HWV_BUILD_VERSION
 		INTERNAL_VERSION=$HWV_BUILDINTERNAL_VERSION
@@ -434,7 +440,7 @@ function tipUserInputLastVersion(){
 		echo -e "\033[0m \c"
 
 		if [ -z "$VSN" ] ;then
-		    tipUserInputLastVersion;
+		    tipUserInputLastVersion
 		else
 		    OTA_COMPARED_VERSION=`echo $VSN|tr '[:lower:]' '[:upper:]'`
 		fi
@@ -448,7 +454,9 @@ function tipUserInputLastVersion(){
 
 if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
     if [ "T" = "$IS_MAKE_FILE" ]; then
-	    tipUserInputLastVersion;
+		if [ "F" = "$IS_FIRST_RELEASE" ]; then
+			tipUserInputLastVersion
+		fi
 	fi
 else
 	OTA_COMPARED_VERSION=`getLastVersion`
@@ -482,7 +490,7 @@ function tipsUserInputComparedVersion(){
 	echo -e "\033[0m"
 
 	if [ -z "$NAME" ] ;then
-		fShowMenu;
+		fShowMenu
 	else
 	    OTA_COMPARED_VERSION_PACKAGE_NAME=$NAME
 	fi
@@ -493,11 +501,13 @@ function tipsUserInputComparedVersion(){
 #get last version package name for make ota differnt split package
 if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ] ||  [ "T" = "$IS_KEEP_DEFAULT_CONFIG" ];then
     if [ "T" = "$IS_MAKE_FILE" ]; then
-	    tipsUserInputComparedVersion;
+	    if [ "F" = "$IS_FIRST_RELEASE" ]; then
+			tipsUserInputComparedVersion
+		fi
 	fi
 else
-	OTA_COMPARED_VERSION_PACKAGE_NAME=`makeDeafaultComparedVersion`;
-    FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT};
+	OTA_COMPARED_VERSION_PACKAGE_NAME=`makeDeafaultComparedVersion`
+    FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}
 fi
 
 function doConfirm(){
@@ -508,8 +518,12 @@ function doConfirm(){
 	echo -e "\t Internal Version:\033[49;31;5m "${INTERNAL_VERSION}"\033[0m "
 	echo -e "\t The final package folder name:\033[49;31;5m "${FOLDER_NAME}"\033[0m "
 	echo -e "\t Is only make package:\033[49;31;5m "${IS_ONLY_MAKE_PACHAGE}"\033[0m "
-	echo -e "\t Compared version:\033[49;31;5m "${OTA_COMPARED_VERSION}"\033[0m "
-	echo -e "\t Last version package name:\033[49;31;5m "${OTA_COMPARED_VERSION_PACKAGE_NAME}"\033[0m "
+	
+	if [ "F" = "$IS_FIRST_RELEASE" ]; then
+		echo -e "\t Compared version:\033[49;31;5m "${OTA_COMPARED_VERSION}"\033[0m "
+		echo -e "\t Last version package name:\033[49;31;5m "${OTA_COMPARED_VERSION_PACKAGE_NAME}"\033[0m "
+	fi
+	
 	echo -e "\t it's correctly(y/n): \c "
 	read confirm
 
@@ -520,16 +534,16 @@ function doConfirm(){
 	else
 		if [ $VERSION != $HWV_BUILD_VERSION ] ;then   
 		sed -i "s/HWV_BUILD_VERSION \= $HWV_BUILD_VERSION/HWV_BUILD_VERSION \= $VERSION/g" "$PROJECT_CONFIG_FILE"
-		checkCommandExc;
+		checkCommandExc
 		fi
 
 		if [ $INTERNAL_VERSION != $HWV_BUILDINTERNAL_VERSION ] ;then   
 		sed -i "s/HWV_BUILDINTERNAL_VERSION \= $HWV_BUILDINTERNAL_VERSION/HWV_BUILDINTERNAL_VERSION \= $INTERNAL_VERSION/g" "$PROJECT_CONFIG_FILE"
-		checkCommandExc;
+		checkCommandExc
 		fi
 	fi
 }
-doConfirm;
+doConfirm
 
 function cleanDust(){
    echo -e "`date '+%Y%m%d  %T'` Begin to clean last release version's dust......!"
@@ -545,23 +559,23 @@ function cleanDust(){
 function doMakeAction(){
 	if [ "$IS_ONLY_MAKE_PACHAGE" = "n" ] ;then
 		log4line "Call 'mk' to make version..."
-		log4model;
+		log4model
 
 		#clear dust
-		cleanDust;
+		cleanDust
 
 		if [ "$TARGET_BUILD_VARIANT" = 'user' ] ;then
 		   ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME new
-		   checkCommandExc;
+		   checkCommandExc
 
 		   ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME otapackage
-		   checkCommandExc;
+		   checkCommandExc
 		elif [ "$TARGET_BUILD_VARIANT" = 'eng' ] ;then
 		   ${CKT_HOME}/mk $PROJECT_NAME new
-		   checkCommandExc;
+		   checkCommandExc
 
 		   ${CKT_HOME}/mk $PROJECT_NAME otapackage
-		   checkCommandExc;
+		   checkCommandExc
 		fi
 	fi
 
@@ -573,7 +587,7 @@ function doMakeAction(){
 
 #build target version 
 if [ "$IS_MAKE_FILE" = "T" ]; then
-	doMakeAction;
+	doMakeAction
 fi
 
 DOCUMENT_FOLDER_NAME=""
@@ -583,26 +597,28 @@ ENG_BOOT_IMG=""
 DOWLOAD_TOOLS_DRIVERS_FOLDER_NAME=""
 README_FILE_NAME=""
 function getFolderParam(){
-	DOCUMENT_FOLDER_NAME=`sed -n '/^DOCUMENT_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
-	checkCommandExc;
+	DOCUMENT_FOLDER_NAME=`sed -n '/^DOCUMENT_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+	checkCommandExc
+	
+    if [ "F" = "$IS_FIRST_RELEASE" ]; then
+		OTA_UPDATE_DIR=`sed -n '/^MIDDLE_HOTA_UPDATE_SOFTWARE_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+		checkCommandExc
+	fi
 
-	OTA_UPDATE_DIR=`sed -n '/^MIDDLE_HOTA_UPDATE_SOFTWARE_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
-	checkCommandExc;
+	SDCARD_UPDATE=`sed -n '/^SD_CARD_SOFTWARE_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+	checkCommandExc
 
-	SDCARD_UPDATE=`sed -n '/^SD_CARD_SOFTWARE_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
-	checkCommandExc;
+	USB_UPDATE=`sed -n '/^USB_SOFTWARE_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+	checkCommandExc
 
-	USB_UPDATE=`sed -n '/^USB_SOFTWARE_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
-	checkCommandExc;
+	ENG_BOOT_IMG=`sed -n '/^ENG_BOOT_IMAGE_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+	checkCommandExc
 
-	ENG_BOOT_IMG=`sed -n '/^ENG_BOOT_IMAGE_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
-	checkCommandExc;
+	DOWLOAD_TOOLS_DRIVERS_FOLDER_NAME=`sed -n '/^DOWLOAD_TOOLS_DRIVERS_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+	checkCommandExc
 
-	DOWLOAD_TOOLS_DRIVERS_FOLDER_NAME=`sed -n '/^DOWLOAD_TOOLS_DRIVERS_FOLDER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
-	checkCommandExc;
-
-	README_FILE_NAME=`sed -n '/^README/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
-	checkCommandExc;
+	README_FILE_NAME=`sed -n '/^README/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+	checkCommandExc
 }
 
 function makeFinalDir(){
@@ -619,8 +635,10 @@ function makeFinalDir(){
 	mkdir $FTP_BACKUP_DIR
 
 	cd $FOLDER_NAME
-	getFolderParam;
-	mkdir $OTA_UPDATE_DIR
+	getFolderParam
+	if [ "F" = "$IS_FIRST_RELEASE" ]; then
+		mkdir $OTA_UPDATE_DIR
+	fi
 	mkdir $SDCARD_UPDATE
 	mkdir $USB_UPDATE
 
@@ -630,18 +648,18 @@ function makeFinalDir(){
 }
 
 #make dir
-makeFinalDir;
+makeFinalDir
 
 function makeSdcardUpdate(){
 	echo -e "`date '+%Y%m%d  %T'` copy sdcard update to folder..."
 	cd $SDCARD_UPDATE
 	cp -f $CKT_HOME/out/target/product/$PROJECT_NAME/$PROJECT_NAME-ota-*.zip ./update.zip
-	checkCommandExc;
+	checkCommandExc
 }
 
 #copy sdcard update
 if [ "$IS_MAKE_FILE" = "T" ]; then
-	makeSdcardUpdate;
+	makeSdcardUpdate
 fi
 
 #copy usb update
@@ -653,53 +671,53 @@ function makeUsbUpdate(){
 
 	cd ${FOLDER_NAME}".bin"
 	cp -rf $CKT_HOME_OUT_PROJECT/EBR1 ./
-	checkCommandExc;
+	checkCommandExc
 
 	cp -rf $CKT_HOME_OUT_PROJECT/boot.img ./
-	checkCommandExc;
+	checkCommandExc
 
 	cp -rf $CKT_HOME_OUT_PROJECT/recovery.img ./
-	checkCommandExc;
+	checkCommandExc
 
 	cp -rf $CKT_HOME_OUT_PROJECT/MT6572_Android_scatter.txt ./
-	checkCommandExc;
+	checkCommandExc
 
 	cp -rf $CKT_HOME_OUT_PROJECT/lk.bin ./
-	checkCommandExc;
+	checkCommandExc
 
 	cp -rf $CKT_HOME_OUT_PROJECT/preloader_ckt72_we_jb3.bin ./
-	checkCommandExc;
+	checkCommandExc
 
 	cp -rf $CKT_HOME_OUT_PROJECT/userdata.img ./
-	checkCommandExc;
+	checkCommandExc
 
 	cp -rf $CKT_HOME_OUT_PROJECT/secro.img ./
-	checkCommandExc;
+	checkCommandExc
 
 	cp -rf $CKT_HOME_OUT_PROJECT/MBR ./
-	checkCommandExc;
+	checkCommandExc
 
 	cp -rf $CKT_HOME_OUT_PROJECT/system.img ./
-	checkCommandExc;
+	checkCommandExc
 
 	cp -rf $CKT_HOME_OUT_PROJECT/cache.img ./
-	checkCommandExc;
+	checkCommandExc
 
 	cp -rf $CKT_HOME_OUT_PROJECT/logo.bin ./
-	checkCommandExc;
+	checkCommandExc
 
 	mkdir DATABASE
 
 	cd DATABASE
 
 	local CUSTOM_MODEM=`grep -w ^CUSTOM_MODEM $PROJECT_CONFIG_FILE|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
-	checkCommandExc;
+	checkCommandExc
 
 	cp -f $CKT_HOME_MTK_MODEM/$CUSTOM_MODEM/BPLGUInfoCustomAppSrcP_* ./
-	checkCommandExc;
+	checkCommandExc
 
    	cp -f $CKT_HOME/mediatek/cgen/APDB_MT6572_S01_MAIN2.1_W10.24 ./
-	checkCommandExc;
+	checkCommandExc
 
 	cd ../../
 	
@@ -709,7 +727,7 @@ function makeUsbUpdate(){
 	fi
 }
 
-makeUsbUpdate;
+makeUsbUpdate
 
 function getFtpParam(){
    local FTP_ADDR_T=`sed -n '/^FTP_ADD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
@@ -718,7 +736,7 @@ function getFtpParam(){
    local FTP_USER_NAME_T=`sed -n '/^FTP_USER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
    FTP_USER_NAME=${FTP_USER_NAME_T#*=}
 
-   local FTP_USER_PASSORD_T=`sed -n '/^FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+   local FTP_USER_PASSORD_T=`sed -n '/^FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
    FTP_USER_PASSORD=${FTP_USER_PASSORD_T#*=}
         
    FTP_URL=$FTP_USER_NAME":"$FTP_USER_PASSORD"@"$FTP_ADDR
@@ -727,24 +745,24 @@ function getFtpParam(){
    local LOCAL_FTP_ADDR_T=`sed -n '/^LOCAL_FTP_ADD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
    LOCAL_FTP_ADDR=${LOCAL_FTP_ADDR_T#*=}
 
-   local LOCAL_FTP_USER_NAME_T=`sed -n '/^LOCAL_FTP_USER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+   local LOCAL_FTP_USER_NAME_T=`sed -n '/^LOCAL_FTP_USER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
    LOCAL_FTP_USER_NAME=${LOCAL_FTP_USER_NAME_T#*=}
 
-   local LOCAL_FTP_USER_PASSORD_T=`sed -n '/^LOCAL_FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+   local LOCAL_FTP_USER_PASSORD_T=`sed -n '/^LOCAL_FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
    LOCAL_FTP_USER_PASSORD=${LOCAL_FTP_USER_PASSORD_T#*=}
         
    LOCAL_FTP_URL=$LOCAL_FTP_USER_NAME":"$LOCAL_FTP_USER_PASSORD"@"$LOCAL_FTP_ADDR
    #LOCAL_FTP_URL=$LOCAL_FTP_ADDR
 
-   FTP_FOLDER_NAME="";
+   FTP_FOLDER_NAME=""
 
    if [ "T" = "$IS_BASE_VERSION_SPECIALLY" ] && [ "$HWV_CUSTOM_VERSION" = "$BASE_CUSTOM_COD" ]; then
-       FTP_FOLDER_NAME="$HWV_PROJECT_NAME/${HWV_PROJECT_NAME}"_"${TARGET_BUILD_VARIANT}";
+       FTP_FOLDER_NAME="$HWV_PROJECT_NAME/${HWV_PROJECT_NAME}"_"${TARGET_BUILD_VARIANT}"
    else
-       FTP_FOLDER_NAME="${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}/${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}"_"${TARGET_BUILD_VARIANT}";
+       FTP_FOLDER_NAME="${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}/${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}"_"${TARGET_BUILD_VARIANT}"
    fi
 }
-getFtpParam;
+getFtpParam
 
 function getLastVersionPackageFromFtp(){
 #do not change the EOF code's position for it must be coded lisk this!
@@ -765,15 +783,17 @@ function getLastVersionPackage(){
 		cp -f $OTA_COMPARED_VERSION_PACKAGE_NAME ./$FOLDER_NAME/$OTA_UPDATE_DIR
 	else
 		cd $FOLDER_NAME/$OTA_UPDATE_DIR
-		getLastVersionPackageFromFtp;
+		getLastVersionPackageFromFtp
 		cd -
 	fi 
 
 	if [ ! -f "$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
-		checkCommandExc;
+		checkCommandExc
 	fi 
 }
-getLastVersionPackage;
+if [ "F" = "$IS_FIRST_RELEASE" ]; then
+	getLastVersionPackage
+fi
 
 #make update ota package naem
 UPDATE_OTA_PACKAGE_NAME=""
@@ -804,25 +824,26 @@ function makeUpdateOtaPrama(){
 	OTA_DIFF_FILE=$FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$UPDATE_OTA_PACKAGE_NAME
 	OTA_DIFF_FILE_VALIDATE=$FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$UPDATE_OTA_PACKAGE_NAME_VALIDATE
 }
-
-makeUpdateOtaPrama;
+if [ "F" = "$IS_FIRST_RELEASE" ]; then
+	makeUpdateOtaPrama
+fi
 
 function makeOtaPackage(){
 	cd $CKT_HOME
 
 	#make ota different split package
 	log4line "begin to make ota different split package..."
-	log4model;
+	log4model
 
 	./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $OTA_DIFF_FILE
-	checkCommandExc;
+	checkCommandExc
 
 	log4line "begin to make validate ota different split package..."
-	log4model;
+	log4model
 
 	#buil validate ota different split package
 	./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME $OTA_DIFF_FILE_VALIDATE
-	checkCommandExc;
+	checkCommandExc
 
 	cd $FINAL_PACKAGE_SAVE_DIR
 
@@ -845,9 +866,11 @@ function makeOtaPackage(){
 	FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=`echo $FTP_BACKUP_HOAT_MIDDLE_FILE_NAME|tr '[:upper:]' '[:lower:]'`
 
 	cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/$FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
-	checkCommandExc;
+	checkCommandExc
 }
-makeOtaPackage;
+if [ "F" = "$IS_FIRST_RELEASE" ]; then
+	makeOtaPackage
+fi
 
 # defind vars for vendor ota package
 HUAWEI_OTA_PACKAGE_NAME=""
@@ -859,25 +882,25 @@ CHANAGE_LOG_FILE=""
 FILE_LIST_FILE=""
 
 function readVendorOtaConfig(){
-    local HUAWEI_OTA_PACKAGE_NAME_T=`sed -n '/^HUAWEI_OTA_PACKAGE_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    local HUAWEI_OTA_PACKAGE_NAME_T=`sed -n '/^HUAWEI_OTA_PACKAGE_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
     HUAWEI_OTA_PACKAGE_NAME=${HUAWEI_OTA_PACKAGE_NAME_T#*=}
 
-    local OTA_UPDATE_COMPONENT_NAME_T=`sed -n '/^OTA_UPDATE_COMPONENT_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    local OTA_UPDATE_COMPONENT_NAME_T=`sed -n '/^OTA_UPDATE_COMPONENT_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
     OTA_UPDATE_COMPONENT_NAME=${OTA_UPDATE_COMPONENT_NAME_T#*=}
 
-    local FULL_DIR_T=`sed -n '/^OTA_UPDATE_FULL_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    local FULL_DIR_T=`sed -n '/^OTA_UPDATE_FULL_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
     FULL_DIR=${FULL_DIR_T#*=}
 
-    local OTA_CONFIG_DIR_T=`sed -n '/^OTA_UPDATE_CONFIG_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    local OTA_CONFIG_DIR_T=`sed -n '/^OTA_UPDATE_CONFIG_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
     OTA_CONFIG_DIR=${OTA_CONFIG_DIR_T#*=}
 
-    local UPDATE_PACKAGE_DIR_T=`sed -n '/^OTA_UPDATE_PACKAGE_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    local UPDATE_PACKAGE_DIR_T=`sed -n '/^OTA_UPDATE_PACKAGE_DIR_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
     UPDATE_PACKAGE_DIR=${UPDATE_PACKAGE_DIR_T#*=}
 
-    local CHANAGE_LOG_FILE_T=`sed -n '/^OTA_UPDATE_CHANAGE_LOG_FILE/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    local CHANAGE_LOG_FILE_T=`sed -n '/^OTA_UPDATE_CHANAGE_LOG_FILE/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
     CHANAGE_LOG_FILE=${CHANAGE_LOG_FILE_T#*=}
 
-    local FILE_LIST_FILE_T=`sed -n '/^OTA_UPDATE_FILE_LIST_FILE/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+    local FILE_LIST_FILE_T=`sed -n '/^OTA_UPDATE_FILE_LIST_FILE/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
     FILE_LIST_FILE=${FILE_LIST_FILE_T#*=}
 }
 
@@ -894,7 +917,7 @@ function makeVendorOtaFile() {
 
     if [ "$1" = "T" ]; then
 		log4line "begin to make vendor ota file..."
-		log4model;
+		log4model
 
         VSN="$FOLDER_NAME_PRE$FINAL_VERSION"
         FTS="$PREVIOUS_VERSION to ${FOLDER_NAME_PRE}${FINAL_VERSION}"
@@ -904,7 +927,7 @@ function makeVendorOtaFile() {
         U_ZIP_NAME=${PREVIOUS_VERSION}"_"${TARGET_BUILD_VARIANT}"--"${FOLDER_NAME}"-updatepackage.zip"
     else
 		log4line "begin to make validate vendor ota file..."
-		log4model;
+		log4model
 
         VSN="$PREVIOUS_VERSION"
         FTS="${FOLDER_NAME_PRE}${FINAL_VERSION} to $PREVIOUS_VERSION"
@@ -917,7 +940,7 @@ function makeVendorOtaFile() {
     cp -f $ODFL $HUAWEI_OTA_PACKAGE_NAME
 
     cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/$UPDATE_PACKAGE_DIR/$OTA_CONFIG_DIR ./
-    checkCommandExc;
+    checkCommandExc
     
     rm -rf $FULL_DIR
     mkdir $FULL_DIR
@@ -927,55 +950,55 @@ function makeVendorOtaFile() {
     local VERSION_CONTENT="<component name=\"TCPU\" version=\"${VSN}\"\/\>"
     local FEATURE_CONTENT="\<feature\>${FTS}\<\/feature\>"
     sed -i "3s/.*/$VERSION_CONTENT/g" "$CHANAGE_LOG_FILE"
-    checkCommandExc;
+    checkCommandExc
 
     sed -i "7s/.*/$FEATURE_CONTENT/g" "$CHANAGE_LOG_FILE"
-    checkCommandExc;
+    checkCommandExc
 
     sed -i "12s/.*/$FEATURE_CONTENT/g" "$CHANAGE_LOG_FILE"
-    checkCommandExc;
+    checkCommandExc
 
     local CHANAGE_LOG_MD5_CONTENT="\<md5\>"`md5sum $CHANAGE_LOG_FILE| cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`"\<\/md5\>"
     local CHANAGE_LOG_FILE_SIZE_CONTENT="\<size\>"`ls -la $CHANAGE_LOG_FILE| cut -d' ' -f5`"\<\/size\>"
     sed -i "12s/.*/$CHANAGE_LOG_MD5_CONTENT/g" "$FILE_LIST_FILE"
-    checkCommandExc;
+    checkCommandExc
 
     sed -i "13s/.*/$CHANAGE_LOG_FILE_SIZE_CONTENT/g" "$FILE_LIST_FILE"
-    checkCommandExc;
+    checkCommandExc
 
     local SAPTH="\<spath\>$SPTH\<\/spath\>"
     local DPATH="\<dpath\>$DPTH\<\/dpath\>"
     sed -i "16s/.*/$SAPTH/g" "$FILE_LIST_FILE"
-    checkCommandExc;
+    checkCommandExc
 
     sed -i "17s/.*/$DPATH/g" "$FILE_LIST_FILE"
-    checkCommandExc;
+    checkCommandExc
 
     local OTA_DIFF_MD5_CONTENT="\<md5\>`md5sum $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$HUAWEI_OTA_PACKAGE_NAME | cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`\<\/md5\>"
     local OTA_DIFF_FILE_SIZE_CONTENT="\<size\>`ls -la $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$HUAWEI_OTA_PACKAGE_NAME | cut -d' ' -f5`\<\/size\>"
     sed -i "19s/.*/$OTA_DIFF_MD5_CONTENT/g" "$FILE_LIST_FILE"
-    checkCommandExc;
+    checkCommandExc
 
     sed -i "20s/.*/$OTA_DIFF_FILE_SIZE_CONTENT/g" "$FILE_LIST_FILE"
-    checkCommandExc;
+    checkCommandExc
 
     cd -
 
     # copy xml file and ota file to  dir
     echo "copying $CHANAGE_LOG_FILE $FILE_LIST_FILE and $HUAWEI_OTA_PACKAGE_NAME to $FULL_DIR"
     cp $OTA_CONFIG_DIR/$CHANAGE_LOG_FILE $FULL_DIR/
-    checkCommandExc;
+    checkCommandExc
 
     cp $OTA_CONFIG_DIR/$FILE_LIST_FILE $FULL_DIR/
-    checkCommandExc;
+    checkCommandExc
 
     cp -f $HUAWEI_OTA_PACKAGE_NAME $FULL_DIR/
-    checkCommandExc;
+    checkCommandExc
 
     rm -f $HUAWEI_OTA_PACKAGE_NAME
 
     mv -f $ODFL $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/
-    checkCommandExc;
+    checkCommandExc
 
     rm -rf $OTA_CONFIG_DIR
 
@@ -993,40 +1016,44 @@ function makeVendorOtaFile() {
 }
 
 #make vendor ota file
-readVendorOtaConfig;
+if [ "F" = "$IS_FIRST_RELEASE" ]; then
+	readVendorOtaConfig
 
-makeVendorOtaFile "T";
+	makeVendorOtaFile "T"
 
-makeVendorOtaFile "F";
+	makeVendorOtaFile "F"
+fi
 
 function copyDocAndTools(){
-	cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/;
+	cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/
 	cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/update_tools ./$DOWLOAD_TOOLS_DRIVERS_FOLDER_NAME
 
-	echo "make hota readme file begin" 
-    local CDATE=`date '+%Y\\.%m\\.%d %H\\:%M'`
-        
-	cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/README.txt ./$README_FILE_NAME
+	if [ "F" = "$IS_FIRST_RELEASE" ]; then
+		echo "make hota readme file begin" 
+		local CDATE=`date '+%Y\\.%m\\.%d %H\\:%M'`
+			
+		cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/README.txt ./$README_FILE_NAME
 
-	if [ "T" = "$IS_EXTERNAL_VERSION_LOCKED" ]; then
-		local LOCKED_VERSION=${FOLDER_NAME_PRE}${VERSION}
-		sed -i "s/\$VERSION_LOW/$LOCKED_VERSION/g" $README_FILE_NAME
-		sed -i "s/\$VERSION_HEIGHT/$LOCKED_VERSION/g" $README_FILE_NAME
-	else
-		sed -i "s/\$VERSION_LOW/${PREVIOUS_VERSION}/g" $README_FILE_NAME
-		sed -i "s/\$VERSION_HEIGHT/${FOLDER_NAME_PRE}${FINAL_VERSION}/g" $README_FILE_NAME
+		if [ "T" = "$IS_EXTERNAL_VERSION_LOCKED" ]; then
+			local LOCKED_VERSION=${FOLDER_NAME_PRE}${VERSION}
+			sed -i "s/\$VERSION_LOW/$LOCKED_VERSION/g" $README_FILE_NAME
+			sed -i "s/\$VERSION_HEIGHT/$LOCKED_VERSION/g" $README_FILE_NAME
+		else
+			sed -i "s/\$VERSION_LOW/${PREVIOUS_VERSION}/g" $README_FILE_NAME
+			sed -i "s/\$VERSION_HEIGHT/${FOLDER_NAME_PRE}${FINAL_VERSION}/g" $README_FILE_NAME
+		fi
+
+		sed -i "s/\$INTERNAL_VERSION_LOW/${PREVIOUS_VERSION}/g" $README_FILE_NAME
+		sed -i "s/\$INTERNAL_VERSION_HEIGHT/${FOLDER_NAME_PRE}${INTERNAL_VERSION}/g" $README_FILE_NAME
+
+		local DEVICE_NAME=`sed -n '/^ro.product.model/p' "$BUILD_PROP_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+
+		sed -i "s/\$DEVICE_NAME/$DEVICE_NAME/g" $README_FILE_NAME
+		sed -i "s/\$CURRENT_DATE/${CDATE}/g" $README_FILE_NAME
+		echo "make hota readme file finish"
 	fi
-
-	sed -i "s/\$INTERNAL_VERSION_LOW/${PREVIOUS_VERSION}/g" $README_FILE_NAME
-	sed -i "s/\$INTERNAL_VERSION_HEIGHT/${FOLDER_NAME_PRE}${INTERNAL_VERSION}/g" $README_FILE_NAME
-
-	local DEVICE_NAME=`sed -n '/^ro.product.model/p' "$BUILD_PROP_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
-
-	sed -i "s/\$DEVICE_NAME/$DEVICE_NAME/g" $README_FILE_NAME
-	sed -i "s/\$CURRENT_DATE/${CDATE}/g" $README_FILE_NAME
-	echo "make hota readme file finish"
 	
-	local DOC_SAVE_DIR=`sed -n '/^DOC_SAVE_DIR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`;
+	local DOC_SAVE_DIR=`sed -n '/^DOC_SAVE_DIR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
 
 	local DOC=""
 	if [ "T" = "$IS_BASE_VERSION_SPECIALLY" ] && [ "$HWV_CUSTOM_VERSION" = "$BASE_CUSTOM_COD" ]; then
@@ -1041,12 +1068,12 @@ function copyDocAndTools(){
 		rename "s/$OTA_COMPARED_VERSION/$FINAL_VERSION/" *
 	fi
 }
-copyDocAndTools;
+copyDocAndTools
 
 function makeEngBootimg(){
 	if [ "T" = "$IS_MAKE_ENG_BOOT_IMG" ] && [ "$TARGET_BUILD_VARIANT" = 'user' ]; then
 		log4line "begin to make eng boot img file..."
-		log4model;
+		log4model
 
 		cd $CKT_HOME
 		$CKT_HOME/mk bootimage new
@@ -1056,7 +1083,7 @@ function makeEngBootimg(){
 		cp -rf $CKT_HOME_OUT_PROJECT/boot.img ./
 	fi
 }
-makeEngBootimg;
+makeEngBootimg
 
 function sendBackupFile2Ftp(){
 	if [ "T" = "$IS_SEND_BACKUP_FILE_TO_SERVICE" ]; then
@@ -1077,14 +1104,14 @@ EOF
 }
 
 # send hoat middle file to ftp service to backup
-sendBackupFile2Ftp;
+sendBackupFile2Ftp
 
 function changeDirName2Chinese(){
 	if [ "T" = "$NEED_CHANGE_DIR_NAME" ];then
 		log4line "begin to change english directory name to chinese characters..."
-		log4model;
+		log4model
 
-		cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/;
+		cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/
 	
 		#HePJ: Because shell is not perfectly support chinese characters, so the chinese folder name can not config 
 		local OTA_UPDATE_FOLDER_NAME="OTA升级差分包"
@@ -1093,7 +1120,9 @@ function changeDirName2Chinese(){
 		local UPDATE_TOOLS_FOLDER_NAME="升级工具及指导"
 		local HOAT_README="HOTA说明文件.txt"
 
-		mv -f $OTA_UPDATE_DIR "$OTA_UPDATE_FOLDER_NAME"
+		if [ "F" = "$IS_FIRST_RELEASE" ]; then
+			mv -f $OTA_UPDATE_DIR "$OTA_UPDATE_FOLDER_NAME"
+		fi
 		mv -f $SDCARD_UPDATE "$SDCARD_UPDATE_FOLDER_NAME"
 		mv -f $USB_UPDATE "$USB_UPDATE_FOLDER_NAME"
 		mv -f $DOWLOAD_TOOLS_DRIVERS_FOLDER_NAME "$UPDATE_TOOLS_FOLDER_NAME"
@@ -1107,7 +1136,7 @@ function changeDirName2Chinese(){
 }
 
 #if you shell environment support chinese characters, you can go config.con, set the [-R] option default on
-changeDirName2Chinese;
+changeDirName2Chinese
 
 function localBackup(){
 	if [ "T" = "$IS_LOCAL_BACKUP" ]; then
@@ -1126,7 +1155,7 @@ EOF
 }
 
 # send version package to local computer,so you can release you version even the VM was not started
-localBackup;
+localBackup
 
 cd $FINAL_PACKAGE_SAVE_DIR
 ls -lt
