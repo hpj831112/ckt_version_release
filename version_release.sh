@@ -503,6 +503,8 @@ if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ] ||  [ "T" = "$IS_KEEP_DEFAULT_CONFIG" ];the
     if [ "T" = "$IS_MAKE_FILE" ]; then
 	    if [ "F" = "$IS_FIRST_RELEASE" ]; then
 			tipsUserInputComparedVersion
+        else
+            FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}
 		fi
 	fi
 else
@@ -524,9 +526,7 @@ function doConfirm(){
 		echo -e "\t Last version package name:\033[49;31;5m "${OTA_COMPARED_VERSION_PACKAGE_NAME}"\033[0m "
 	fi
 	
-	echo -e "\t it's correctly(y/n): \c "
-	read confirm
-
+    read -e -p "it's correctly[y/n]:" -i "y" confirm
 	CFM=`echo $confirm |tr '[:upper:]' '[:lower:]'`
 
 	if [ ! "$CFM" = 'y' ] ;then
@@ -826,7 +826,22 @@ function makeUpdateOtaPrama(){
 }
 if [ "F" = "$IS_FIRST_RELEASE" ]; then
 	makeUpdateOtaPrama
+else
+	SHORT_PROJECT_NAME=`echo ${HWV_PROJECT_NAME#*-}|tr '[:upper:]' '[:lower:]'`
 fi
+
+function makeFtpBackupOtaPackageName(){
+	TEMP_V=`echo $FINAL_VERSION|tr '[:lower:]' '[:upper:]'`
+	FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=${SHORT_PROJECT_NAME}"_"${TEMP_V}"_"${TARGET_BUILD_VARIANT}".zip"
+
+	local HCV=`echo $HWV_CUSTOM_VERSION|tr '[:lower:]' '[:upper:]'`
+
+	if [ "T" = "$IS_BASE_VERSION_SPECIALLY" ] && [ ! "$HWV_CUSTOM_VERSION" = "$BASE_CUSTOM_COD" ]; then
+       FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=${SHORT_PROJECT_NAME}"_"${HCV}"_"${TEMP_V}"_"${TARGET_BUILD_VARIANT}".zip"
+    fi
+
+	FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=`echo $FTP_BACKUP_HOAT_MIDDLE_FILE_NAME|tr '[:upper:]' '[:lower:]'`
+}
 
 function makeOtaPackage(){
 	cd $CKT_HOME
@@ -854,22 +869,18 @@ function makeOtaPackage(){
 		mv -f $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME ./
 	fi
 
-	TEMP_V=`echo $FINAL_VERSION|tr '[:lower:]' '[:upper:]'`
-	FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=${SHORT_PROJECT_NAME}"_"${TEMP_V}"_"${TARGET_BUILD_VARIANT}".zip"
-
-	local HCV=`echo $HWV_CUSTOM_VERSION|tr '[:lower:]' '[:upper:]'`
-
-	if [ "T" = "$IS_BASE_VERSION_SPECIALLY" ] && [ ! "$HWV_CUSTOM_VERSION" = "$BASE_CUSTOM_COD" ]; then
-       FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=${SHORT_PROJECT_NAME}"_"${HCV}"_"${TEMP_V}"_"${TARGET_BUILD_VARIANT}".zip"
-    fi
-
-	FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=`echo $FTP_BACKUP_HOAT_MIDDLE_FILE_NAME|tr '[:upper:]' '[:lower:]'`
+    makeFtpBackupOtaPackageName
 
 	cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/$FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
 	checkCommandExc
 }
 if [ "F" = "$IS_FIRST_RELEASE" ]; then
 	makeOtaPackage
+else
+    makeFtpBackupOtaPackageName
+
+	cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/$FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
+	checkCommandExc
 fi
 
 # defind vars for vendor ota package
