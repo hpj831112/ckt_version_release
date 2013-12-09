@@ -46,7 +46,7 @@
     [-B]: open FTP backup function. Please use this option carefully, 
           because the network is often unstable. eg: ckt_release -x -B
 
-	[-E]: open make eng boot img function. Please use this option carefully, 
+    [-E]: open make eng boot img function. Please use this option carefully, 
           because if do so, the sdcard update file will be deleted in out dir. 
           eg: ckt_release -x -E
 
@@ -71,7 +71,7 @@
 
     [-?]: show usage
 
-	[-h]: show this message
+    [-h]: show this message
 
     If you want to known more about this tool, please read the README.md 
     in this tool's home directory...

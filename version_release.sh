@@ -52,7 +52,7 @@ IS_MENU_SHOW="T"
 IS_SHOW_COPYRIGHT="T"
 
 #demain is make the ota package
-IS_MAKE_OTA_PACKAGE="T"
+IS_MAKE_HOTA_PACKAGE="T"
 
 #demain is make the huawei ota package
 IS_MAKE_HUAWEI_OTA_PACKAGE="T"
@@ -77,6 +77,9 @@ IS_BASE_VERSION_SPECIALLY="T"
 
 #demain every configration is keep the default
 IS_KEEP_DEFAULT_CONFIG="F"
+
+#demain if need to make otaupdate package
+IS_MAKE_OTAUPDATE="T"
 
 function getConfigFile(){
 	cd /sbin
@@ -136,7 +139,7 @@ function showReadme(){
 }
 
 #read user input options
-while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXDF" opt; do
+while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXDFO" opt; do
 	case $opt in
 	    p ) PROJECT_NAME=$OPTARG 
 	        ;;
@@ -154,7 +157,7 @@ while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXDF" opt; do
 	        ;;
 	    l ) OTA_COMPARED_VERSION=`echo $OPTARG|tr '[:lower:]' '[:upper:]'`  
 	        ;;
-	   \n ) IS_MAKE_OTA_PACKAGE="F" 
+	   \n ) IS_MAKE_HOTA_PACKAGE="F" 
 	        ;;
 	   \w ) IS_MAKE_HUAWEI_OTA_PACKAGE="F"
 	        ;;
@@ -175,7 +178,11 @@ while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXDF" opt; do
 	   \K ) IS_EXTERNAL_VERSION_LOCAKED="T"
 			;;
 	   \X ) IS_MAKE_FILE="F"
-	        IS_MAKE_OTA_PACKAGE="F" 
+	        IS_MAKE_HOTA_PACKAGE="F" 
+			;;
+	   \O ) IS_MAKE_OTAUPDATE="F" 
+			IS_ONLY_BUILD="T"
+            IS_MAKE_HOTA_PACKAGE="F" 
 			;;
 	   \D ) IS_KEEP_DEFAULT_CONFIG="T"
 			;;
@@ -227,7 +234,7 @@ function showCopyright(){
 } 
 showCopyright
 
-if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || [ "$1" = "-E" ] || [ "$1" = "-X" ] || [ "$1" = "-D" ] || [ "$1" = "-F" ]; then
+if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || [ "$1" = "-E" ] || [ "$1" = "-X" ] || [ "$1" = "-D" ] || [ "$1" = "-F" ] || [ "$1" = "-O" ]; then
    fShowMenu
    IS_MENU_SHOW="T"
 fi
@@ -299,7 +306,7 @@ function getDefaultOption(){
 			K ) IS_EXTERNAL_VERSION_LOCAKED="T"
 				;;
 			X ) IS_MAKE_FILE="F"
-			    IS_MAKE_OTA_PACKAGE="F" 
+			    IS_MAKE_HOTA_PACKAGE="F" 
 				;;
 			D ) IS_KEEP_DEFAULT_CONFIG="T"
 				;;
@@ -350,7 +357,6 @@ function getVersionParam(){
 
     FOLDER_NAME_PRE=$HWV_PROJECT_NAME$HWV_VERSION_NAME$HWV_RELEASE_NAME$HWV_CUSTOM_VERSION
 }
-
 getVersionParam
 
 function makeVersion(){
@@ -432,7 +438,7 @@ function getLastVersion(){
 }
 
 function tipUserInputLastVersion(){
-	if [ "$IS_MENU_SHOW"="T" ] && [ -z "$OTA_COMPARED_VERSION" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T" ] && [ "$IS_ONLY_BUILD" = "F" ]; then
+	if [ "$IS_MENU_SHOW"="T" ] && [ -z "$OTA_COMPARED_VERSION" ] && [ "$IS_MAKE_HOTA_PACKAGE" = "T" ] && [ "$IS_ONLY_BUILD" = "F" ]; then
 		local V_T=`getLastVersion`
 		
 		echo -e "\033[49;36;1m"
@@ -453,17 +459,15 @@ function tipUserInputLastVersion(){
 }
 
 if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
-    if [ "T" = "$IS_MAKE_FILE" ]; then
-		if [ "F" = "$IS_FIRST_RELEASE" ]; then
-			tipUserInputLastVersion
-		fi
+    if [ "T" = "$IS_MAKE_FILE" ] && [ "F" = "$IS_FIRST_RELEASE" ] && [ "$IS_MAKE_HOTA_PACKAGE" = "T" ]; then
+		tipUserInputLastVersion
 	fi
 else
 	OTA_COMPARED_VERSION=`getLastVersion`
 fi
 
 function makeDeafaultComparedVersion(){
-	if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ] && [ "$IS_MAKE_OTA_PACKAGE" = "T" ] && [ "$IS_ONLY_BUILD" = "F" ];then
+	if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ] && [ "$IS_MAKE_HOTA_PACKAGE" = "T" ] && [ "$IS_ONLY_BUILD" = "F" ];then
 		local SHORT_PROJECT_NAME_T=${HWV_PROJECT_NAME#*-}
 		SHORT_PROJECT_NAME=`echo $SHORT_PROJECT_NAME_T|tr '[:upper:]' '[:lower:]'`
 		local HW_CST_VSN=`echo $HWV_CUSTOM_VERSION|tr '[:upper:]' '[:lower:]'` 
@@ -499,13 +503,11 @@ function tipsUserInputComparedVersion(){
 }
 
 #get last version package name for make ota differnt split package
-if [ "$IS_ONLY_MAKE_PACHAGE" = "y" ] ||  [ "T" = "$IS_KEEP_DEFAULT_CONFIG" ];then
-    if [ "T" = "$IS_MAKE_FILE" ]; then
-	    if [ "F" = "$IS_FIRST_RELEASE" ]; then
-			tipsUserInputComparedVersion
-        else
-            FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}
-		fi
+if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
+    if [ "T" = "$IS_MAKE_FILE" ] && [ "F" = "$IS_FIRST_RELEASE" ] && [ "$IS_MAKE_HOTA_PACKAGE" = "T" ]; then
+	    tipsUserInputComparedVersion  
+    else
+        FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}
 	fi
 else
 	OTA_COMPARED_VERSION_PACKAGE_NAME=`makeDeafaultComparedVersion`
@@ -521,7 +523,7 @@ function doConfirm(){
 	echo -e "\t The final package folder name:\033[49;31;5m "${FOLDER_NAME}"\033[0m "
 	echo -e "\t Is only make package:\033[49;31;5m "${IS_ONLY_MAKE_PACHAGE}"\033[0m "
 	
-	if [ "F" = "$IS_FIRST_RELEASE" ]; then
+	if [ "F" = "$IS_FIRST_RELEASE" ] || [ "$IS_MAKE_HOTA_PACKAGE" = "F" ]; then
 		echo -e "\t Compared version:\033[49;31;5m "${OTA_COMPARED_VERSION}"\033[0m "
 		echo -e "\t Last version package name:\033[49;31;5m "${OTA_COMPARED_VERSION_PACKAGE_NAME}"\033[0m "
 	fi
@@ -565,21 +567,25 @@ function doMakeAction(){
 		cleanDust
 
 		if [ "$TARGET_BUILD_VARIANT" = 'user' ] ;then
-		   ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME new
-		   checkCommandExc
+		    ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME new
+		    checkCommandExc
 
-		   ${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME otapackage
-		   checkCommandExc
+		    if [ "T" = "$IS_MAKE_OTAUPDATE" ]; then
+		   		${CKT_HOME}/mk -o=TARGET_BUILD_VARIANT=user $PROJECT_NAME otapackage
+		    	checkCommandExc
+			fi
 		elif [ "$TARGET_BUILD_VARIANT" = 'eng' ] ;then
-		   ${CKT_HOME}/mk $PROJECT_NAME new
-		   checkCommandExc
+		    ${CKT_HOME}/mk $PROJECT_NAME new
+		    checkCommandExc
 
-		   ${CKT_HOME}/mk $PROJECT_NAME otapackage
-		   checkCommandExc
+            if [ "T" = "$IS_MAKE_OTAUPDATE" ]; then
+		    	${CKT_HOME}/mk $PROJECT_NAME otapackage
+		    	checkCommandExc
+            fi
 		fi
 	fi
 
-	if [ "$IS_ONLY_BUILD" = "T" ]  && [ "$IS_MAKE_OTA_PACKAGE" = "T" ]; then
+	if [ "$IS_ONLY_BUILD" = "T" ]  && [ "$IS_MAKE_HOTA_PACKAGE" = "T" ]; then
 	   echo "Build is completed, there has no more task to do, the tools will exit!"
 	   exit
 	fi
@@ -658,7 +664,7 @@ function makeSdcardUpdate(){
 }
 
 #copy sdcard update
-if [ "$IS_MAKE_FILE" = "T" ]; then
+if [ "$IS_MAKE_FILE" = "T" ] && [ "T" = "$IS_MAKE_OTAUPDATE" ]; then
 	makeSdcardUpdate
 fi
 
@@ -721,7 +727,7 @@ function makeUsbUpdate(){
 
 	cd ../../
 	
-	if [ "$IS_MAKE_OTA_PACKAGE" = "F" ]; then
+	if [ "$IS_MAKE_HOTA_PACKAGE" = "F" ]; then
 	   echo "Package is maked completed, there has no more task to do, the tools will exit!"
 	   exit 1
 	fi
