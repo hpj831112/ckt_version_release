@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
-<component name="TCPU" version="Y320-U151V100R001C00B211"/>
+<component name="$COMPONENT_NAME" version="$TARGET_VERSION"/>
 <default-language name="en-us">1033</default-language>
 <language name="en-us" code="1033">
 <features>
-<feature>Y320-U151V100R001C00B209 to Y320-U151V100R001C00B211</feature>
+<feature>$VERSION_LOW to $VERSION_HEIGHT</feature>
 </features>
 </language>
 <language name="zh-cn" code="2052">
 <features>
-<feature>Y320-U151V100R001C00B209 to Y320-U151V100R001C00B211</feature>
+<feature>$VERSION_LOW to $VERSION_HEIGHT</feature>
 </features>
 </language>
 </root>

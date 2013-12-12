@@ -922,22 +922,24 @@ function readVendorOtaConfig(){
 }
 
 #  add for make vendor ota file
-function makeVendorOtaFile() {
+function makeVendorOtaFileByVar() {
     cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR
 
     local VSN=""
-    local FTS=""
     local SPTH=""
     local DPTH=""
     local ODFL=""
     local U_ZIP_NAME=""
+	local V_LOW=""
+	local V_HEIGHT=""
 
     if [ "$1" = "T" ]; then
 		log4line "begin to make vendor ota file..."
 		log4model
 
         VSN="$FOLDER_NAME_PRE$FINAL_VERSION"
-        FTS="$PREVIOUS_VERSION to ${FOLDER_NAME_PRE}${FINAL_VERSION}"
+		V_LOW="$PREVIOUS_VERSION"
+		V_HEIGHT="${FOLDER_NAME_PRE}${FINAL_VERSION}"
         SPTH="$HUAWEI_OTA_PACKAGE_NAME"
         DPTH="$HUAWEI_OTA_PACKAGE_NAME"
         ODFL="$OTA_DIFF_FILE"
@@ -947,7 +949,8 @@ function makeVendorOtaFile() {
 		log4model
 
         VSN="$PREVIOUS_VERSION"
-        FTS="${FOLDER_NAME_PRE}${FINAL_VERSION} to $PREVIOUS_VERSION"
+		V_LOW="${FOLDER_NAME_PRE}${FINAL_VERSION}"
+		V_HEIGHT="$PREVIOUS_VERSION"
         SPTH="$HUAWEI_OTA_PACKAGE_NAME"
         DPTH="$HUAWEI_OTA_PACKAGE_NAME"
         ODFL="$OTA_DIFF_FILE_VALIDATE"
@@ -963,41 +966,50 @@ function makeVendorOtaFile() {
     mkdir $FULL_DIR
 
     cd $OTA_CONFIG_DIR
-    local VERSION_CONTENT="<component name=\"$OTA_UPDATE_COMPONENT_NAME\" version=\"${VSN}\"\/\>"
-    local VERSION_CONTENT="<component name=\"TCPU\" version=\"${VSN}\"\/\>"
-    local FEATURE_CONTENT="\<feature\>${FTS}\<\/feature\>"
-    sed -i "3s/.*/$VERSION_CONTENT/g" "$CHANAGE_LOG_FILE"
+	sed -i "s/\$COMPONENT_NAME/${OTA_UPDATE_COMPONENT_NAME}/g" $CHANAGE_LOG_FILE
+    checkCommandExc
+	
+	sed -i "s/\$TARGET_VERSION/${VSN}/g" $CHANAGE_LOG_FILE
     checkCommandExc
 
-    sed -i "7s/.*/$FEATURE_CONTENT/g" "$CHANAGE_LOG_FILE"
+	sed -i "s/\$VERSION_LOW/${V_LOW}/g" $CHANAGE_LOG_FILE
     checkCommandExc
 
-    sed -i "12s/.*/$FEATURE_CONTENT/g" "$CHANAGE_LOG_FILE"
+	sed -i "s/\$VERSION_HEIGHT/${V_HEIGHT}/g" $CHANAGE_LOG_FILE
     checkCommandExc
 
-    local CHANAGE_LOG_MD5_CONTENT="\<md5\>"`md5sum $CHANAGE_LOG_FILE| cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`"\<\/md5\>"
-    local CHANAGE_LOG_FILE_SIZE_CONTENT="\<size\>"`ls -la $CHANAGE_LOG_FILE| cut -d' ' -f5`"\<\/size\>"
-    sed -i "12s/.*/$CHANAGE_LOG_MD5_CONTENT/g" "$FILE_LIST_FILE"
-    checkCommandExc
+    local CHANAGE_LOG_MD5_CONTENT=`md5sum $CHANAGE_LOG_FILE| cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`
+    local CHANAGE_LOG_FILE_SIZE_CONTENT=`ls -la $CHANAGE_LOG_FILE| cut -d' ' -f5`
+	
+	sed -i "s/\$COMPONENT_NAME/${OTA_UPDATE_COMPONENT_NAME}/g" $FILE_LIST_FILE
+	checkCommandExc
+	
+	sed -i "s/\$SPATH/${CHANAGE_LOG_FILE}/g" $FILE_LIST_FILE
+	checkCommandExc
+	
+	sed -i "s/\$DPATH/${CHANAGE_LOG_FILE}/g" $FILE_LIST_FILE
+	checkCommandExc
+	
+	sed -i "s/\$MD5_PATN/${CHANAGE_LOG_MD5_CONTENT}/g" $FILE_LIST_FILE
+	checkCommandExc
+	
+	sed -i "s/\$PATN_SIZE/${CHANAGE_LOG_FILE_SIZE_CONTENT}/g" $FILE_LIST_FILE
+	checkCommandExc
 
-    sed -i "13s/.*/$CHANAGE_LOG_FILE_SIZE_CONTENT/g" "$FILE_LIST_FILE"
-    checkCommandExc
-
-    local SAPTH="\<spath\>$SPTH\<\/spath\>"
-    local DPATH="\<dpath\>$DPTH\<\/dpath\>"
-    sed -i "16s/.*/$SAPTH/g" "$FILE_LIST_FILE"
-    checkCommandExc
-
-    sed -i "17s/.*/$DPATH/g" "$FILE_LIST_FILE"
-    checkCommandExc
-
-    local OTA_DIFF_MD5_CONTENT="\<md5\>`md5sum $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$HUAWEI_OTA_PACKAGE_NAME | cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`\<\/md5\>"
-    local OTA_DIFF_FILE_SIZE_CONTENT="\<size\>`ls -la $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$HUAWEI_OTA_PACKAGE_NAME | cut -d' ' -f5`\<\/size\>"
-    sed -i "19s/.*/$OTA_DIFF_MD5_CONTENT/g" "$FILE_LIST_FILE"
-    checkCommandExc
-
-    sed -i "20s/.*/$OTA_DIFF_FILE_SIZE_CONTENT/g" "$FILE_LIST_FILE"
-    checkCommandExc
+    local OTA_DIFF_MD5_CONTENT=`md5sum $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$HUAWEI_OTA_PACKAGE_NAME | cut -d' ' -f1|tr '[:lower:]' '[:upper:]'`
+    local OTA_DIFF_FILE_SIZE_CONTENT=`ls -la $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$HUAWEI_OTA_PACKAGE_NAME | cut -d' ' -f5`
+	
+	sed -i "s/\$HOTA_SPATH/${SPTH}/g" $FILE_LIST_FILE
+	checkCommandExc
+	
+	sed -i "s/\$HOTA_DPATH/${DPTH}/g" $FILE_LIST_FILE
+	checkCommandExc
+	
+	sed -i "s/\$MD5_HOTA_PATH/${OTA_DIFF_MD5_CONTENT}/g" $FILE_LIST_FILE
+	checkCommandExc
+	
+	sed -i "s/\$HOTA_PATH_SIZE/${OTA_DIFF_FILE_SIZE_CONTENT}/g" $FILE_LIST_FILE
+	checkCommandExc
 
     cd -
 
@@ -1036,9 +1048,9 @@ function makeVendorOtaFile() {
 if [ "F" = "$IS_FIRST_RELEASE" ]; then
 	readVendorOtaConfig
 
-	makeVendorOtaFile "T"
+	makeVendorOtaFileByVar "T"
 
-	makeVendorOtaFile "F"
+	makeVendorOtaFileByVar "F"
 fi
 
 function copyDocAndTools(){
