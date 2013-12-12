@@ -9,7 +9,7 @@
 <spath>$SPATH</spath>
 <dpath>$DPATH</dpath>
 <operation>c</operation>
-<md5>$MD5_PATN</md5>
+<md5>$MD5_PATH</md5>
 <size>$PATN_SIZE</size>
 </file>
 <file>

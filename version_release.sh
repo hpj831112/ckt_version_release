@@ -990,7 +990,7 @@ function makeVendorOtaFileByVar() {
 	sed -i "s/\$DPATH/${CHANAGE_LOG_FILE}/g" $FILE_LIST_FILE
 	checkCommandExc
 	
-	sed -i "s/\$MD5_PATN/${CHANAGE_LOG_MD5_CONTENT}/g" $FILE_LIST_FILE
+	sed -i "s/\$MD5_PATH/${CHANAGE_LOG_MD5_CONTENT}/g" $FILE_LIST_FILE
 	checkCommandExc
 	
 	sed -i "s/\$PATN_SIZE/${CHANAGE_LOG_FILE_SIZE_CONTENT}/g" $FILE_LIST_FILE
