@@ -636,7 +636,7 @@ function makeFinalDir(){
 	rm -rf $FOLDER_NAME
 	mkdir $FOLDER_NAME
 
-	FTP_BACKUP_DIR=`echo ${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}"_ftp_backup"|tr '[:upper:]' '[:lower:]'`
+	FTP_BACKUP_DIR=`echo ${HWV_CUSTOM_VERSION}_${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}"_ftp_backup"|tr '[:upper:]' '[:lower:]'`
 	rm -rf $FTP_BACKUP_DIR
 	mkdir $FTP_BACKUP_DIR
 
