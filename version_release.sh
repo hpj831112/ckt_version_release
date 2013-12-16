@@ -1060,7 +1060,8 @@ function copyDocAndTools(){
 	if [ "F" = "$IS_FIRST_RELEASE" ]; then
 		echo "make hota readme file begin" 
 		local CDATE=`date '+%Y\\.%m\\.%d %H\\:%M'`
-			
+		
+        cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR
 		cp -rf $VERSION_RELEASE_SHELL_FOLDER/data/${VENDOR}"_ota"/README.txt ./$README_FILE_NAME
 
 		if [ "T" = "$IS_EXTERNAL_VERSION_LOCKED" ]; then
@@ -1082,6 +1083,7 @@ function copyDocAndTools(){
 		echo "make hota readme file finish"
 	fi
 	
+    cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/
 	local DOC_SAVE_DIR=`sed -n '/^DOC_SAVE_DIR/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
 
 	local DOC=""
