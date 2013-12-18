@@ -627,6 +627,41 @@ function getFolderParam(){
 	checkCommandExc
 }
 
+function getFtpParam(){
+   local FTP_ADDR_T=`sed -n '/^FTP_ADD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+   FTP_ADDR=${FTP_ADDR_T#*=}
+
+   local FTP_USER_NAME_T=`sed -n '/^FTP_USER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+   FTP_USER_NAME=${FTP_USER_NAME_T#*=}
+
+   local FTP_USER_PASSORD_T=`sed -n '/^FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+   FTP_USER_PASSORD=${FTP_USER_PASSORD_T#*=}
+        
+   FTP_URL=$FTP_USER_NAME":"$FTP_USER_PASSORD"@"$FTP_ADDR
+
+   ##local ftp
+   local LOCAL_FTP_ADDR_T=`sed -n '/^LOCAL_FTP_ADD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
+   LOCAL_FTP_ADDR=${LOCAL_FTP_ADDR_T#*=}
+
+   local LOCAL_FTP_USER_NAME_T=`sed -n '/^LOCAL_FTP_USER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+   LOCAL_FTP_USER_NAME=${LOCAL_FTP_USER_NAME_T#*=}
+
+   local LOCAL_FTP_USER_PASSORD_T=`sed -n '/^LOCAL_FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
+   LOCAL_FTP_USER_PASSORD=${LOCAL_FTP_USER_PASSORD_T#*=}
+        
+   LOCAL_FTP_URL=$LOCAL_FTP_USER_NAME":"$LOCAL_FTP_USER_PASSORD"@"$LOCAL_FTP_ADDR
+   #LOCAL_FTP_URL=$LOCAL_FTP_ADDR
+
+   FTP_FOLDER_NAME=""
+
+   if [ "T" = "$IS_BASE_VERSION_SPECIALLY" ] && [ "$HWV_CUSTOM_VERSION" = "$BASE_CUSTOM_COD" ]; then
+       FTP_FOLDER_NAME="$HWV_PROJECT_NAME/${HWV_PROJECT_NAME}"_"${TARGET_BUILD_VARIANT}"
+   else
+       FTP_FOLDER_NAME="${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}/${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}"_"${TARGET_BUILD_VARIANT}"
+   fi
+}
+getFtpParam
+
 function makeFinalDir(){
 	local TEMP_STR=`makeFixedLengStr "-" 90 "-"`
 	echo "$TEMP_STR"
@@ -636,9 +671,14 @@ function makeFinalDir(){
 	rm -rf $FOLDER_NAME
 	mkdir $FOLDER_NAME
 
-	FTP_BACKUP_DIR=`echo ${HWV_CUSTOM_VERSION}_${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}"_ftp_backup"|tr '[:upper:]' '[:lower:]'`
+	local FTP_BACKUP_DIR_T=`echo ${HWV_CUSTOM_VERSION}_${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}"_ftp_backup"|tr '[:lower:]' '[:upper:]'`
+    FTP_BACKUP_DIR=$FTP_BACKUP_DIR_T
+    if [ "T" = "$IS_FIRST_RELEASE" ]; then
+        FTP_BACKUP_DIR="${FTP_BACKUP_DIR_T}/$FTP_FOLDER_NAME"
+	fi
+
 	rm -rf $FTP_BACKUP_DIR
-	mkdir $FTP_BACKUP_DIR
+	mkdir -p $FTP_BACKUP_DIR/
 
 	cd $FOLDER_NAME
 	getFolderParam
@@ -734,41 +774,6 @@ function makeUsbUpdate(){
 }
 
 makeUsbUpdate
-
-function getFtpParam(){
-   local FTP_ADDR_T=`sed -n '/^FTP_ADD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-   FTP_ADDR=${FTP_ADDR_T#*=}
-
-   local FTP_USER_NAME_T=`sed -n '/^FTP_USER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-   FTP_USER_NAME=${FTP_USER_NAME_T#*=}
-
-   local FTP_USER_PASSORD_T=`sed -n '/^FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-   FTP_USER_PASSORD=${FTP_USER_PASSORD_T#*=}
-        
-   FTP_URL=$FTP_USER_NAME":"$FTP_USER_PASSORD"@"$FTP_ADDR
-
-   ##local ftp
-   local LOCAL_FTP_ADDR_T=`sed -n '/^LOCAL_FTP_ADD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-   LOCAL_FTP_ADDR=${LOCAL_FTP_ADDR_T#*=}
-
-   local LOCAL_FTP_USER_NAME_T=`sed -n '/^LOCAL_FTP_USER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-   LOCAL_FTP_USER_NAME=${LOCAL_FTP_USER_NAME_T#*=}
-
-   local LOCAL_FTP_USER_PASSORD_T=`sed -n '/^LOCAL_FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-   LOCAL_FTP_USER_PASSORD=${LOCAL_FTP_USER_PASSORD_T#*=}
-        
-   LOCAL_FTP_URL=$LOCAL_FTP_USER_NAME":"$LOCAL_FTP_USER_PASSORD"@"$LOCAL_FTP_ADDR
-   #LOCAL_FTP_URL=$LOCAL_FTP_ADDR
-
-   FTP_FOLDER_NAME=""
-
-   if [ "T" = "$IS_BASE_VERSION_SPECIALLY" ] && [ "$HWV_CUSTOM_VERSION" = "$BASE_CUSTOM_COD" ]; then
-       FTP_FOLDER_NAME="$HWV_PROJECT_NAME/${HWV_PROJECT_NAME}"_"${TARGET_BUILD_VARIANT}"
-   else
-       FTP_FOLDER_NAME="${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}/${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}"_"${TARGET_BUILD_VARIANT}"
-   fi
-}
-getFtpParam
 
 function getLastVersionPackageFromFtp(){
 #do not change the EOF code's position for it must be coded lisk this!
