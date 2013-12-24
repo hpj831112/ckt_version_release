@@ -81,9 +81,6 @@ IS_KEEP_DEFAULT_CONFIG="F"
 #demain if need to make otaupdate package
 IS_MAKE_OTAUPDATE="T"
 
-#menu option choose
-MENU_OPTION_CHOOSE=""
-
 function getConfigFile(){
 	cd /sbin
 	local VERSION_RELEASE_HOME_T=`readlink ckt_release`
@@ -107,18 +104,14 @@ function fShowMenu(){
     local option3="ckt72_we_lca-user"
     local option4="ckt72_we_lca-eng"
 
-    if [ -z "$MENU_OPTION_CHOOSE" ]; then
-        echo -e "\033[49;34;5m ckt_release Menu...  Please choose a option: "
-        echo -e "\t 1.$option1"
-        echo -e "\t 2.$option2"
-        echo -e "\t 3.$option3"
-        echo -e "\t 4.$option4 \033[0m "
-        echo -e "Input the order of the project you choosed:\c"
-        read order
-    else
-        order=$MENU_OPTION_CHOOSE
-    fi
+    echo -e "\033[49;34;5m ckt_release Menu...  Please choose a option: "
+    echo -e "\t 1.$option1"
+    echo -e "\t 2.$option2"
+    echo -e "\t 3.$option3"
+    echo -e "\t 4.$option4 \033[0m "
+    echo -e "Input the order of the project you choosed:\c"
 
+    read order
     if [ "$order" = "1" ] ;then
        PROJECT_NAME=${option1%*-*}
        TARGET_BUILD_VARIANT=${option1#*-}
@@ -240,43 +233,6 @@ function showCopyright(){
 	fi
 } 
 showCopyright
-
-function getUserOptionFromConfig(){
-    CONFIG_MENU_OPTION_CHOOSE=`sed -n '/^CONFIG_MENU_OPTION_CHOSSE/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
-
-    CONFIG_EXTERNAL_VERSION=`sed -n '/^CONFIG_EXTERNAL_VERSION/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
-
-    CONFIG_INTERNAL_VERSION=`sed -n '/^CONFIG_INTERNAL_VERSION/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
-
-    CONFIG_COMPARED_VERSION_FOR_OTA=`sed -n '/^CONFIG_COMPARED_VERSION_FOR_OTA/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
-
-    CONFIG_PACKAGE_NAME_OF_THE_COMPARE_VERSION=`sed -n '/^CONFIG_PACKAGE_NAME_OF_THE_COMPARE_VERSION/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
-
-    if [ ! -z "$CONFIG_MENU_OPTION_CHOOSE" ]; then
-        MENU_OPTION_CHOOSE=$CONFIG_MENU_OPTION_CHOOSE
-    fi
-
-    if [ ! -z "$CONFIG_EXTERNAL_VERSION" ]; then
-        VERSION=`echo $CONFIG_EXTERNAL_VERSION|tr '[:lower:]' '[:upper:]'`
-    fi
-
-    if [ ! -z "$CONFIG_INTERNAL_VERSION" ]; then
-        INTERNAL_VERSION=`echo $CONFIG_INTERNAL_VERSION|tr '[:lower:]' '[:upper:]'`
-    fi
-
-    if [ "$VERSION" = "B100" ] && [ "$INTERNAL_VERSION" = "B100" ]; then
-        IS_FIRST_RELEASE="T"
-    fi
-
-    if [ ! -z "$CONFIG_COMPARED_VERSION_FOR_OTA" ]; then
-        OTA_COMPARED_VERSION=$CONFIG_COMPARED_VERSION_FOR_OTA
-    fi
-
-    if [ ! -z "$CONFIG_PACKAGE_NAME_OF_THE_COMPARE_VERSION" ]; then
-        OTA_COMPARED_VERSION_PACKAGE_NAME=$CONFIG_PACKAGE_NAME_OF_THE_COMPARE_VERSION
-    fi
-}
-getUserOptionFromConfig
 
 if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || [ "$1" = "-E" ] || [ "$1" = "-X" ] || [ "$1" = "-D" ] || [ "$1" = "-F" ] || [ "$1" = "-O" ]; then
    fShowMenu
@@ -504,9 +460,7 @@ function tipUserInputLastVersion(){
 
 if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
     if [ "T" = "$IS_MAKE_FILE" ] && [ "F" = "$IS_FIRST_RELEASE" ] && [ "$IS_MAKE_HOTA_PACKAGE" = "T" ]; then
-        if [ -z "$OTA_COMPARED_VERSION" ]; then
-            tipUserInputLastVersion        
-        fi
+		tipUserInputLastVersion
 	fi
 else
 	OTA_COMPARED_VERSION=`getLastVersion`
@@ -551,11 +505,7 @@ function tipsUserInputComparedVersion(){
 #get last version package name for make ota differnt split package
 if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
     if [ "T" = "$IS_MAKE_FILE" ] && [ "F" = "$IS_FIRST_RELEASE" ] && [ "$IS_MAKE_HOTA_PACKAGE" = "T" ]; then
-        if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
-	        tipsUserInputComparedVersion 
-        else
-            FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}
-        fi 
+	    tipsUserInputComparedVersion  
     else
         FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}
 	fi
@@ -595,9 +545,7 @@ function doConfirm(){
 		fi
 	fi
 }
-if [ -z "$MENU_OPTION_CHOOSE" ] && [ -z "$VERSION" ] && [ -z "$INTERNAL_VERSION" ] && [ -z "$OTA_COMPARED_VERSION" ] && [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
-    doConfirm
-fi
+doConfirm
 
 function cleanDust(){
    echo -e "`date '+%Y%m%d  %T'` Begin to clean last release version's dust......!"
