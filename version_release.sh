@@ -629,13 +629,13 @@ function getFolderParam(){
 
 function getFtpParam(){
    local FTP_ADDR_T=`sed -n '/^FTP_ADD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-   FTP_ADDR=${FTP_ADDR_T#*=}
+   FTP_ADDR=`echo ${FTP_ADDR_T#*=} | tr 'P-~!-O' '!-~'`
 
    local FTP_USER_NAME_T=`sed -n '/^FTP_USER_NAME/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`;
-   FTP_USER_NAME=${FTP_USER_NAME_T#*=}
+   FTP_USER_NAME=`echo ${FTP_USER_NAME_T#*=} | tr 'P-~!-O' '!-~'`
 
    local FTP_USER_PASSORD_T=`sed -n '/^FTP_USER_PASSORD/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'`
-   FTP_USER_PASSORD=${FTP_USER_PASSORD_T#*=}
+   FTP_USER_PASSORD=`echo ${FTP_USER_PASSORD_T#*=} | tr 'P-~!-O' '!-~'`
         
    FTP_URL=$FTP_USER_NAME":"$FTP_USER_PASSORD"@"$FTP_ADDR
 
