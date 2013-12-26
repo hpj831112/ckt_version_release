@@ -780,7 +780,7 @@ function getLastVersionPackageFromFtp(){
 lftp $FTP_URL<< EOF
 	set ftp:charset gbk;
 	cd Y320U_EMMC;
-	cd HOAT中间文件;
+	cd HOAT_Package;
 	cd $FTP_FOLDER_NAME;
 	get $OTA_COMPARED_VERSION_PACKAGE_NAME;
     bye;
@@ -1131,7 +1131,7 @@ function sendBackupFile2Ftp(){
 lftp $FTP_URL<< EOF
 	set ftp:charset gbk;
 	cd Y320U_EMMC;
-	cd HOAT中间文件;
+	cd HOAT_Package;
 	cd $FTP_FOLDER_NAME;
     put $FTP_BACKUP_HOAT_MIDDLE_FILE_NAME;
     bye;
