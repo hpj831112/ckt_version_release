@@ -1081,7 +1081,7 @@ function copyDocAndTools(){
 		sed -i "s/\$INTERNAL_VERSION_LOW/${PREVIOUS_VERSION}/g" $README_FILE_NAME
 		sed -i "s/\$INTERNAL_VERSION_HEIGHT/${FOLDER_NAME_PRE}${INTERNAL_VERSION}/g" $README_FILE_NAME
 
-		local DEVICE_NAME=`sed -n '/^ro.product.model/p' "$BUILD_PROP_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+		local DEVICE_NAME=`sed -n '/^ro.product.model/p' "$BUILD_PROP_FILE"|sed 's/#.*$//g'|awk -F "=" '{print $2}'`
 
 		sed -i "s/\$DEVICE_NAME/$DEVICE_NAME/g" $README_FILE_NAME
 		sed -i "s/\$CURRENT_DATE/${CDATE}/g" $README_FILE_NAME
