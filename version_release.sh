@@ -33,7 +33,7 @@ IS_ONLY_MAKE_PACHAGE="n"
 OTA_COMPARED_VERSION_PACKAGE_NAME=""
 
 #demain is external version locked
-IS_EXTERNAL_VERSION_LOCAKED="F"
+IS_EXTERNAL_VERSION_LOCKED="F"
 
 IS_MAKE_FILE="T"
 
@@ -175,7 +175,7 @@ while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXDFO" opt; do
 			;;
 	   \L ) IS_LOCAL_BACKUP="T"
 			;;
-	   \K ) IS_EXTERNAL_VERSION_LOCAKED="T"
+	   \K ) IS_EXTERNAL_VERSION_LOCKED="T"
 			;;
 	   \X ) IS_MAKE_FILE="F"
 	        IS_MAKE_HOTA_PACKAGE="F" 
@@ -303,7 +303,7 @@ function getDefaultOption(){
 				;;
 			L ) IS_LOCAL_BACKUP="T"
 				;;
-			K ) IS_EXTERNAL_VERSION_LOCAKED="T"
+			K ) IS_EXTERNAL_VERSION_LOCKED="T"
 				;;
 			X ) IS_MAKE_FILE="F"
 			    IS_MAKE_HOTA_PACKAGE="F" 
@@ -364,7 +364,7 @@ function makeVersion(){
 	if [ -z "$VERSION" ]; then
 		VERSION=$HWV_BUILD_VERSION
 
-		if [ "F" = "$IS_EXTERNAL_VERSION_LOCAKED" ];then
+		if [ "F" = "$IS_EXTERNAL_VERSION_LOCKED" ];then
 			#defind target build version
 			echo -e "\033[49;36;1m"
 			read -e -p "Enter The External Version:" -i "$HWV_BUILD_VERSION" BUILD_VERSION
@@ -1085,6 +1085,11 @@ function copyDocAndTools(){
 
 		sed -i "s/\$DEVICE_NAME/$DEVICE_NAME/g" $README_FILE_NAME
 		sed -i "s/\$CURRENT_DATE/${CDATE}/g" $README_FILE_NAME
+		if [ "$TARGET_BUILD_VARIANT" = 'user' ] ;then
+		    sed -i "s/\$IS_FOR_USER/YES/g" $README_FILE_NAME
+		else
+		    sed -i "s/\$IS_FOR_USER/NO/g" $README_FILE_NAME
+		fi
 		echo "make hota readme file finish"
 	fi
 	

@@ -5,7 +5,7 @@ $VERSION_HEIGHT  版本到  $VERSION_LOW  版本
 
 1、版本HOTA测试目的：内部验证 或 商用发布测试
 2、计划HOTA测试开始时间： $CURRENT_DATE
-3、此HOTA升级是否针对user版本：是 或 否
+3、此HOTA升级是否针对user版本：$IS_FOR_USER
 
 
 1、设备名称：$DEVICE_NAME
