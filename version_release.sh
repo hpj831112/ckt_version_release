@@ -213,12 +213,12 @@ function log4line(){
     local DT=`date '+%Y%m%d  %T'`
     LOG=`echo $DT $1|awk '{printf "%-83s" ,$0}'`
     
-    if [ -f "$FINAL_PACKAGE_SAVE_DIR/$LOG_FILE" ] && [ "T" = "$IS_LOG_TO_FILE" ]; then
-        echo $LOG >> $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE 
+    if [ -f "$LOG_FILE" ] && [ "T" = "$IS_LOG_TO_FILE" ] && [ "$2" = "T" ]; then
+        echo $LOG >> $LOG_FILE 
     fi
 
     if [ "$2" = "T" ]; then
-        echo $LOG 
+        echo -e $LOG 
     fi
 }
 
@@ -227,6 +227,12 @@ function log4model(){
     echo "+$TEMP_STR+"
     echo "+=  $LOG  =+" 
     echo "+$TEMP_STR+"
+
+    if [ -f "$LOG_FILE" ] && [ "T" = "$IS_LOG_TO_FILE" ]; then 
+        echo "+$TEMP_STR+" >> $LOG_FILE 
+        echo "+=  $LOG  =+" >> $LOG_FILE 
+        echo "+$TEMP_STR+" >> $LOG_FILE 
+    fi
 }
 
 function showCopyright(){
@@ -242,6 +248,8 @@ function showCopyright(){
     fi
 } 
 showCopyright
+
+. $VERSION_RELEASE_SHELL_FOLDER/checklist.sh
 
 if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || [ "$1" = "-E" ] || [ "$1" = "-X" ] || [ "$1" = "-D" ] || [ "$1" = "-F" ] || [ "$1" = "-O" ]; then
    fShowMenu
@@ -545,28 +553,33 @@ function doConfirm(){
 doConfirm
 
 function makeLogFile(){
-    LOG_FILE="ckt_version_release.log"
+    LOG_FILE="$FINAL_PACKAGE_SAVE_DIR/ckt_version_release.log"
     if [ -f "$LOG_FILE" ]; then
-        IS_REPEAT_BUILD="T"
+        local L_V=`sed -n '/^Build_Number/p' "$LOG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+        if [ "$L_V" = "${FOLDER_NAME_PRE}${FINAL_VERSION}" ]; then
+            IS_REPEAT_BUILD="T"
+        fi
     fi
 
-    > $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE
+    > $LOG_FILE
 
     local T_BUILD_TIME=`date '+%Y%m%d  %T'`
-    echo "Build Time=$T_BUILD_TIME" >> $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE
-    echo "Build Number=${FOLDER_NAME_PRE}${FINAL_VERSION}" >> $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE
+    echo "Build Time=$T_BUILD_TIME" >> $LOG_FILE
+    echo "Build_Number=${FOLDER_NAME_PRE}${FINAL_VERSION}" >> $LOG_FILE
     echo "Project Name=$PROJECT_NAME" >> $LOG_FILE
-    echo "Target Build Variant=$TARGET_BUILD_VARIANT" >> $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE
-    echo "External Version=$VERSION" >> $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE
-    echo "Internal Version=$INTERNAL_VERSION" >> $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE
-    echo "Is First Release version=$IS_FIRST_RELEASE" >> $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE
-    echo "Default Strengthen Option=${ARRY_DEFAUIT_OPTIONS[@]}" >> $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE
+    echo "Target Build Variant=$TARGET_BUILD_VARIANT" >> $LOG_FILE
+    echo "External Version=$VERSION" >> $LOG_FILE
+    echo "Internal Version=$INTERNAL_VERSION" >> $LOG_FILE
+    echo "Is First Release version=$IS_FIRST_RELEASE" >> $LOG_FILE
+    echo "Default Strengthen Option=${ARRY_DEFAUIT_OPTIONS[@]}" >> $LOG_FILE
+
     if [ "F" = "$IS_FIRST_RELEASE" ] || [ "$IS_MAKE_HOTA_PACKAGE" = "F" ]; then
-        echo "Compared Version=$OTA_COMPARED_VERSION" >> $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE
-        echo "Last Version Package Name=$OTA_COMPARED_VERSION_PACKAGE_NAME" >> $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE
+        echo "Compared Version=$OTA_COMPARED_VERSION" >> $LOG_FILE
+        echo "Last Version Package Name=$OTA_COMPARED_VERSION_PACKAGE_NAME" >> $LOG_FILE
     fi
-    echo "Is Only Make Package=$IS_ONLY_MAKE_PACHAGE" >> $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE
-    echo "-------------------------------detail log below---------------------" >> $FINAL_PACKAGE_SAVE_DIR/$LOG_FILE
+
+    echo "Is Only Make Package=$IS_ONLY_MAKE_PACHAGE" >> $LOG_FILE
+    echo "-------------------------------detail log below---------------------" >> $LOG_FILE
 }
 
 if [ "T" = "$IS_LOG_TO_FILE" ]; then
@@ -782,17 +795,20 @@ makeUsbUpdate
 
 function getLastVersionPackageFromFtp(){
 #do not change the EOF code's position for it must be coded lisk this!
-lftp $FTP_URL<< EOF
-    set ftp:charset gbk;
-    cd Y320U_EMMC;
-    cd HOAT_Package;
-    cd $FTP_FOLDER_NAME;
-    get $OTA_COMPARED_VERSION_PACKAGE_NAME;
-    bye;
+ftp -n << EOF
+    open $FTP_ADDR
+    user $FTP_USER_NAME $FTP_USER_PASSORD
+    binary
+    cd $FTP_FOLDER_NAME 
+    get $OTA_COMPARED_VERSION_PACKAGE_NAME
+    bye
 EOF
 }
 
 function getLastVersionPackage(){
+    log4line "begin to make ota different split package..." "F"
+    log4model
+
     cd $FINAL_PACKAGE_SAVE_DIR/
 
     if [ -f "$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
@@ -866,9 +882,6 @@ function makeOtaPackage(){
     cd $CKT_HOME
 
     #make ota different split package
-    log4line "begin to make ota different split package..." "F"
-    log4model
-
     ./build/tools/releasetools/ota_from_target_files -k build/target/product/security/ckt72_we_jb3/releasekey -i $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/${PROJECT_NAME}-target_files-*.zip $OTA_DIFF_FILE
 
     log4line "begin to make validate ota different split package..." "F"
@@ -943,7 +956,7 @@ function makeVendorOtaFileByVar() {
     local V_HEIGHT=""
 
     if [ "$1" = "T" ]; then
-        log4line "begin to make vendor ota file..." "T"
+        log4line "begin to make vendor ota file..." "F"
         log4model
 
         VSN="$FOLDER_NAME_PRE$FINAL_VERSION"
@@ -954,7 +967,7 @@ function makeVendorOtaFileByVar() {
         ODFL="$OTA_DIFF_FILE"
         U_ZIP_NAME=${PREVIOUS_VERSION}"_"${TARGET_BUILD_VARIANT}"--"${FOLDER_NAME}"-updatepackage.zip"
     else
-        log4line "begin to make validate vendor ota file..." "T"
+        log4line "begin to make validate vendor ota file..." "F"
         log4model
 
         VSN="$PREVIOUS_VERSION"
@@ -1113,22 +1126,49 @@ function makeEngBootimg(){
 }
 makeEngBootimg
 
+#if happend some error in the process of sending ota middle package to ftp server
+#please connect the manager to dill with it 
 function sendBackupFile2Ftp(){
+    local FTP_FOLDER_NAME_BASE1=""
+    local FTP_FOLDER_NAME_BASE2=""
+
     if [ "T" = "$IS_SEND_BACKUP_FILE_TO_SERVICE" ]; then
-        log4line"begin to sen hoat middle files to ftp service..." "T" 
+        log4line "begin to sen hoat middle files to ftp service..." "T" 
             
         cd $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/
-
-#do not change the EOF code's position for it must be coded lisk this!
-lftp $FTP_URL<< EOF
-    set ftp:charset gbk;
-    cd Y320U_EMMC;
-    cd HOAT_Package;
-    cd $FTP_FOLDER_NAME;
-    put $FTP_BACKUP_HOAT_MIDDLE_FILE_NAME;
-    bye;
+            if [ "F" = "$IS_FIRST_RELEASE" ] || [ "T" = "$IS_REPEAT_BUILD" ]; then
+                #do not change the EOF code's position for it must be coded lisk this!
+ftp -n << EOF
+    open $FTP_ADDR 
+    user $FTP_USER_NAME $FTP_USER_PASSORD
+    set ftp:charset gbk
+    binary
+    cd $FTP_FOLDER_NAME
+    put $FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
+    bye
 EOF
-        log4line"sen hoat middle files to ftp service end" "T" 
+            else
+                if [ "T" = "$IS_BASE_VERSION_SPECIALLY" ] && [ "$HWV_CUSTOM_VERSION" = "$BASE_CUSTOM_COD" ]; then
+                    FTP_FOLDER_NAME_BASE1="$HWV_PROJECT_NAME"
+                    FTP_FOLDER_NAME_BASE2="${HWV_PROJECT_NAME}"_"${TARGET_BUILD_VARIANT}"
+                else
+                    FTP_FOLDER_NAME_BASE1="${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}"
+                    FTP_FOLDER_NAME_BASE2="${HWV_PROJECT_NAME}_${HWV_CUSTOM_VERSION}"_"${TARGET_BUILD_VARIANT}"
+                fi
+#do not change the EOF code's position for it must be coded lisk this!
+ftp -n << EOF
+    open $FTP_ADDR 
+    user $FTP_USER_NAME $FTP_USER_PASSORD
+    set ftp:charset gbk
+    binary
+    mkdir -m 777 $FTP_FOLDER_NAME_BASE1
+    cd $FTP_FOLDER_NAME_BASE1
+    mkdir -m 777 $FTP_FOLDER_NAME_BASE2
+    cd $FTP_FOLDER_NAME_BASE2
+    put $FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
+    bye
+EOF
+            fi
     fi
 }
 
@@ -1175,10 +1215,13 @@ function localBackup(){
         cd $FINAL_PACKAGE_SAVE_DIR
         rar a $LOCAL_FTP_ZIP ./$FOLDER_NAME ./$FTP_BACKUP_DIR
 
-lftp $LOCAL_FTP_URL<< EOF
-    set ftp:charset gbk;
-    put $LOCAL_FTP_ZIP;
-    bye;
+ftp -n << EOF
+    open $LOCAL_FTP_ADDR
+    user $LOCAL_FTP_USER_NAME $LOCAL_FTP_USER_PASSORD
+    set ftp:charset gbk
+    binary
+    put $LOCAL_FTP_ZIP
+    bye
 EOF
         
     rm -f $LOCAL_FTP_ZIP
@@ -1191,4 +1234,4 @@ localBackup
 
 cd $FINAL_PACKAGE_SAVE_DIR
 ls -lt
-log4line "The final package save dir is: `pwd` DOWN" "T"
+log4line "\033[49;31;5m The final package save dir is: `pwd` \033[0m DOWN" "T"
