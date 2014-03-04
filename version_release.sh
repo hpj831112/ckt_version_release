@@ -44,6 +44,8 @@ IS_FIRST_RELEASE="F"
 
 IS_REPEAT_BUILD="F"
 
+IS_DO_CHECK="T"
+
 #user introduction
 USAGE="Usage: $0 [-p project] [-t target_build_variant] [-v version] [-i internal_version] [-m only_build] [-z n or y] [-n only_make_package] [-o ota_compares_version_package_name] [-l ota_compared_version] [-x supper_packaged_option] [-w not_make_vendor_ota_package] [-R change_dir_name_to_chinese] [-I final_folder_name's_version_based_on_internal_versuon] [-B open_ftp_backup_function] [-E make_eng_bootimg] [-L local_backup] [-K is_external_version_locked] [-X not_call_mk] [-F first_release] [-? show_this_message]"
 
@@ -159,10 +161,12 @@ while getopts ":p:t:v:i:z:o:l:hmnwxRIBSEKPXDFO" opt; do
         l ) OTA_COMPARED_VERSION=`echo $OPTARG|tr '[:lower:]' '[:upper:]'`  
             ;;
        \n ) IS_MAKE_HOTA_PACKAGE="F" 
+            IS_ONLY_BUILD="T"
             ;;
        \w ) IS_MAKE_HUAWEI_OTA_PACKAGE="F"
             ;;
        \x ) IS_ONLY_MAKE_PACHAGE="y"
+            #IS_MAKE_FILE="F"
             ;;
        \I ) IS_FOLDER_NAME_BASED_ON_INTERNAL_VERSION="T"
             ;;
@@ -249,13 +253,6 @@ function showCopyright(){
 } 
 showCopyright
 
-. $VERSION_RELEASE_SHELL_FOLDER/checklist.sh
-
-if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || [ "$1" = "-E" ] || [ "$1" = "-X" ] || [ "$1" = "-D" ] || [ "$1" = "-F" ] || [ "$1" = "-O" ]; then
-   fShowMenu
-   IS_MENU_SHOW="T"
-fi
-
 ##defind global vars
 
 # out dir of the project
@@ -319,16 +316,35 @@ function getDefaultOption(){
             K ) IS_EXTERNAL_VERSION_LOCKED="T"
                 ;;
             X ) IS_MAKE_FILE="F"
-                IS_MAKE_HOTA_PACKAGE="F" 
+                IS_MAKE_HOTA_PACKAGE="F"
+                IS_ONLY_MAKE_PACHAGE="y"
                 ;;
             D ) IS_KEEP_DEFAULT_CONFIG="T"
                 ;;
-            G ) IS_LOG_TO_FILE="F"
+            F ) IS_FIRST_RELEASE="T"
+            	;;
+			G ) IS_LOG_TO_FILE="F"
+                ;;
+            C ) IS_DO_CHECK="F"
                 ;;
          esac
-    done 
+    done
 }
 getDefaultOption
+
+function doCheck(){
+    if [ "T" = "$IS_DO_CHECK" ]; then
+        if [ $IS_MAKE_FILE = "T" ] && [ $IS_ONLY_MAKE_PACHAGE = "n" ]; then
+            . $VERSION_RELEASE_SHELL_FOLDER/checklist.sh
+        fi
+    fi
+}
+doCheck
+
+if [ $OPTION_COUNT -eq 0 ] || [ "$1" = "-x" ]  || [ "$1" = "-l" ] || [ "$1" = "-m" ] || [ "$1" = "-n" ] || [ "$1" = "-w" ] || [ "$1" = "-R" ] || [ "$1" = "-I" ] || [ "$1" = "-B" ] || [ "$1" = "-E" ] || [ "$1" = "-X" ] || [ "$1" = "-D" ] || [ "$1" = "-F" ] || [ "$1" = "-O" ]; then
+   fShowMenu
+   IS_MENU_SHOW="T"
+fi
 
 #get version param
 HWV_BUILD_VERSION=""
@@ -467,7 +483,9 @@ function tipUserInputLastVersion(){
 
 if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
     if [ "T" = "$IS_MAKE_FILE" ] && [ "F" = "$IS_FIRST_RELEASE" ] && [ "$IS_MAKE_HOTA_PACKAGE" = "T" ]; then
-        tipUserInputLastVersion
+        if [ -z "$OTA_COMPARED_VERSION" ]; then
+            tipUserInputLastVersion        
+        fi
     fi
 else
     OTA_COMPARED_VERSION=`getLastVersion`
@@ -512,7 +530,11 @@ function tipsUserInputComparedVersion(){
 #get last version package name for make ota differnt split package
 if [ "F" = "$IS_KEEP_DEFAULT_CONFIG" ];then
     if [ "T" = "$IS_MAKE_FILE" ] && [ "F" = "$IS_FIRST_RELEASE" ] && [ "$IS_MAKE_HOTA_PACKAGE" = "T" ]; then
-        tipsUserInputComparedVersion  
+        if [ -z "$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
+            tipsUserInputComparedVersion 
+        else
+            FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}
+        fi 
     else
         FOLDER_NAME=${FOLDER_NAME_PRE}${FINAL_VERSION}"_"${TARGET_BUILD_VARIANT}
     fi
@@ -620,7 +642,7 @@ function doMakeAction(){
         fi
     fi
 
-    if [ "$IS_ONLY_BUILD" = "T" ]  && [ "$IS_MAKE_HOTA_PACKAGE" = "T" ]; then
+    if [ "$IS_ONLY_BUILD" = "T" ] && [ "$IS_MAKE_HOTA_PACKAGE" = "T" ]; then
         log4line "Build is completed, there has no more task to do, the tools will exit!" "T"
         exit
     fi
@@ -689,6 +711,38 @@ function getFtpParam(){
    fi
 }
 getFtpParam
+
+GIT_URL=""
+GIT_HOTA_FOLDER_NAME=""
+function makeGitUrl(){
+    local CONFIG_GIT_URL_PRE=`sed -n '/^CONFIG_GIT_URL_PRE/p' "$VERSION_RELEASE_CONFIG_FILE"|sed 's/#.*$//g'|sed 's/\ //g'|awk -F "=" '{print $2}'`
+    local TMP_FOLDER_NAME=`echo ${HWV_PROJECT_NAME/-/_} | tr '[:upper:]' '[:lower:]'`
+    local TMP_DEV_PRE=""
+    local TMP_DEV_SUF=""
+    local IS_R4=""
+    local T_VS=`echo $VERSION | tr '[:upper:]' '[:lower:]'`
+
+    if [ "$HWV_CUSTOM_VERSION" = "$BASE_CUSTOM_COD" ]; then
+        TMP_DEV_PRE=${TMP_FOLDER_NAME%*-*}
+        TMP_DEV_SUF=${TMP_FOLDER_NAME#*-}
+        if [ "u10" = "$TMP_DEV_SUF" ]; then
+            TMP_DEV_SUF="hwdsls"
+        fi
+        
+        IS_R4=`echo ${T_VS:$((${#T_VS}-1)):1}`
+        if [ "n" = "$IS_R4" ]; then
+            GIT_HOTA_FOLDER_NAME="${TMP_DEV_PRE}_r4_${TMP_DEV_SUF}"
+        else
+            GIT_HOTA_FOLDER_NAME="${TMP_DEV_PRE}_${TMP_DEV_SUF}"
+        fi
+        
+    else
+        GIT_HOTA_FOLDER_NAME=`echo ${TMP_FOLDER_NAME}_${HWV_CUSTOM_VERSION} | tr '[:upper:]' '[:lower:]'`
+    fi
+     
+    GIT_URL="$CONFIG_GIT_URL_PRE:int/$GIT_HOTA_FOLDER_NAME"
+}
+makeGitUrl
 
 function makeFinalDir(){
     local TEMP_STR=`makeFixedLengStr "-" 90 "-"`
@@ -805,6 +859,7 @@ ftp -n << EOF
 EOF
 }
 
+IS_HOTA_PACKAGE_FROM_GIT="F"
 function getLastVersionPackage(){
     log4line "begin to make ota different split package..." "F"
     log4model
@@ -822,9 +877,23 @@ function getLastVersionPackage(){
     fi 
 
     if [ ! -f "$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME" ]; then
-        log4line "get ota compared version package failed, the tools will exit..." "T"
-        exit 1
-    fi 
+        cd $CKT_HOME/
+        if [ -d "$CKT_HOME/$GIT_HOTA_FOLDER_NAME" ]; then
+            cd $GIT_HOTA_FOLDER_NAME
+            if [ -d "$CKT_HOME/$GIT_HOTA_FOLDER_NAME/.git" ]; then
+                git pull
+            else
+                local TMP_T=`date +%s`
+                cd $CKT_HOME/
+                GIT_HOTA_FOLDER_NAME="$GIT_HOTA_FOLDER_NAME$TMP_T"
+                git clone $GIT_URL $GIT_HOTA_FOLDER_NAME
+            fi
+        else
+            git clone $GIT_URL
+        fi
+        cp -f $GIT_HOTA_FOLDER_NAME/$OTA_COMPARED_VERSION_PACKAGE_NAME $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR/$OTA_COMPARED_VERSION_PACKAGE_NAME
+        IS_HOTA_PACKAGE_FROM_GIT="T"
+    fi    
 }
 if [ "F" = "$IS_FIRST_RELEASE" ]; then
     getLastVersionPackage
@@ -867,15 +936,15 @@ fi
 
 function makeFtpBackupOtaPackageName(){
     TEMP_V=`echo $FINAL_VERSION|tr '[:lower:]' '[:upper:]'`
-    FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=${SHORT_PROJECT_NAME}"_"${TEMP_V}"_"${TARGET_BUILD_VARIANT}".zip"
+    FTP_BACKUP_HOTA_MIDDLE_FILE_NAME=${SHORT_PROJECT_NAME}"_"${TEMP_V}"_"${TARGET_BUILD_VARIANT}".zip"
 
     local HCV=`echo $HWV_CUSTOM_VERSION|tr '[:lower:]' '[:upper:]'`
 
     if [ "T" = "$IS_BASE_VERSION_SPECIALLY" ] && [ ! "$HWV_CUSTOM_VERSION" = "$BASE_CUSTOM_COD" ]; then
-       FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=${SHORT_PROJECT_NAME}"_"${HCV}"_"${TEMP_V}"_"${TARGET_BUILD_VARIANT}".zip"
+       FTP_BACKUP_HOTA_MIDDLE_FILE_NAME=${SHORT_PROJECT_NAME}"_"${HCV}"_"${TEMP_V}"_"${TARGET_BUILD_VARIANT}".zip"
     fi
 
-    FTP_BACKUP_HOAT_MIDDLE_FILE_NAME=`echo $FTP_BACKUP_HOAT_MIDDLE_FILE_NAME|tr '[:upper:]' '[:lower:]'`
+    FTP_BACKUP_HOTA_MIDDLE_FILE_NAME=`echo $FTP_BACKUP_HOTA_MIDDLE_FILE_NAME|tr '[:upper:]' '[:lower:]'`
 }
 
 function makeOtaPackage(){
@@ -901,14 +970,14 @@ function makeOtaPackage(){
 
     makeFtpBackupOtaPackageName
 
-    cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/$FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
+    cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/$FTP_BACKUP_HOTA_MIDDLE_FILE_NAME
 }
 if [ "F" = "$IS_FIRST_RELEASE" ]; then
     makeOtaPackage
 else
     makeFtpBackupOtaPackageName
 
-    cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/$FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
+    cp -f $CKT_HOME_OUT_PROJECT/obj/PACKAGING/target_files_intermediates/$PROJECT_NAME-target_files-*.zip  $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/$FTP_BACKUP_HOTA_MIDDLE_FILE_NAME
 fi
 
 # defind vars for vendor ota package
@@ -1133,7 +1202,7 @@ function sendBackupFile2Ftp(){
     local FTP_FOLDER_NAME_BASE2=""
 
     if [ "T" = "$IS_SEND_BACKUP_FILE_TO_SERVICE" ]; then
-        log4line "begin to sen hoat middle files to ftp service..." "T" 
+        log4line "begin to sen hota middle files to ftp service..." "T" 
             
         cd $FINAL_PACKAGE_SAVE_DIR/$FTP_BACKUP_DIR/
             if [ "F" = "$IS_FIRST_RELEASE" ] || [ "T" = "$IS_REPEAT_BUILD" ]; then
@@ -1144,7 +1213,7 @@ ftp -n << EOF
     set ftp:charset gbk
     binary
     cd $FTP_FOLDER_NAME
-    put $FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
+    put $FTP_BACKUP_HOTA_MIDDLE_FILE_NAME
     bye
 EOF
             else
@@ -1165,14 +1234,14 @@ ftp -n << EOF
     cd $FTP_FOLDER_NAME_BASE1
     mkdir -m 777 $FTP_FOLDER_NAME_BASE2
     cd $FTP_FOLDER_NAME_BASE2
-    put $FTP_BACKUP_HOAT_MIDDLE_FILE_NAME
+    put $FTP_BACKUP_HOTA_MIDDLE_FILE_NAME
     bye
 EOF
             fi
     fi
 }
 
-# send hoat middle file to ftp service to backup
+# send HOTA middle file to ftp service to backup
 sendBackupFile2Ftp
 
 function changeDirName2Chinese(){
@@ -1187,7 +1256,7 @@ function changeDirName2Chinese(){
         local SDCARD_UPDATE_FOLDER_NAME="SD卡升级软件包"
         local USB_UPDATE_FOLDER_NAME="USB升级软件包"
         local UPDATE_TOOLS_FOLDER_NAME="升级工具及指导"
-        local HOAT_README="HOTA说明文件.txt"
+        local HOTA_README="HOTA说明文件.txt"
 
         if [ "F" = "$IS_FIRST_RELEASE" ]; then
             mv -f $OTA_UPDATE_DIR "$OTA_UPDATE_FOLDER_NAME"
@@ -1195,14 +1264,22 @@ function changeDirName2Chinese(){
         mv -f $SDCARD_UPDATE "$SDCARD_UPDATE_FOLDER_NAME"
         mv -f $USB_UPDATE "$USB_UPDATE_FOLDER_NAME"
         mv -f $DOWLOAD_TOOLS_DRIVERS_FOLDER_NAME "$UPDATE_TOOLS_FOLDER_NAME"
-        mv -f $README_FILE_NAME "$HOAT_README"
+        mv -f $README_FILE_NAME "$HOTA_README"
 
         if [ "T" = "$IS_MAKE_ENG_BOOT_IMG" ] && [ "$TARGET_BUILD_VARIANT" = 'user' ]; then
             local ENG_BOOT_IMG_CHINESE="带root权限的bootimage"
             mv -f $ENG_BOOT_IMG "$ENG_BOOT_IMG_CHINESE"
         fi
-            log4line "change english directory name to chinese characters end!" "T"
+        log4line "change english directory name to chinese characters end!" "T"
     fi
+
+    ## the code below is unnecessarily, if upadte, please delete it @{ 
+    if [ "F" = "$IS_FIRST_RELEASE" ]; then
+        cd $FINAL_PACKAGE_SAVE_DIR/$FOLDER_NAME/$OTA_UPDATE_DIR
+        local HOTA_README="Hota说明文件.txt"
+        mv -f $README_FILE_NAME "$HOTA_README"
+    fi
+    ## @}
 }
 
 #if you shell environment support chinese characters, you can go config.con, set the [-R] option default on
@@ -1231,6 +1308,23 @@ EOF
 
 # send version package to local computer,so you can release you version even the VM was not started
 localBackup
+
+function commitToGit(){
+    if [ "T" = "$IS_HOTA_PACKAGE_FROM_GIT" ]; then
+        log4line "send hota package to fit server!" "T" 
+        cd $CKT_HOME/$GIT_HOTA_FOLDER_NAME
+        git pull
+        
+        if [ -f "$CKT_HOME/$GIT_HOTA_FOLDER_NAME/$FTP_BACKUP_HOTA_MIDDLE_FILE_NAME" ]; then
+            git add $FTP_BACKUP_HOTA_MIDDLE_FILE_NAME
+            git commit -m "add $FTP_BACKUP_HOTA_MIDDLE_FILE_NAME to git service"
+            git push
+
+            rm -rf $CKT_HOME/$GIT_HOTA_FOLDER_NAME
+        fi
+    fi
+}
+commitToGit
 
 cd $FINAL_PACKAGE_SAVE_DIR
 ls -lt
